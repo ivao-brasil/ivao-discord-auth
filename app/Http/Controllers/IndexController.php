@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\IVAOApiService;
-use App\Services\Contracts\IVAOApiServiceContract;
+
 
 class IndexController extends Controller
 {

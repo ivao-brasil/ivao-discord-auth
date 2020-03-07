@@ -15,4 +15,4 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', 'IndexController@showIndex')->middleware('auth');
 Route::get('/login', 'IndexController@login')->name('login');
-Route::get('/login/callback', 'Indexcontroller@loginCallback');
+Route::get('/login/callback', 'IndexController@loginCallback');
