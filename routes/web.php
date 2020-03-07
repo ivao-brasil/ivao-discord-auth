@@ -13,6 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('index');
-});
+Route::get('/', 'IndexController@showIndex')->middleware('auth');
+Route::get('/login', 'IndexController@login')->name('login');
+Route::get('/login/callback', 'Indexcontroller@loginCallback');
