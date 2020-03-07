@@ -2,7 +2,7 @@
 
 namespace App\Services;
 use App\Services\Contracts\IVAOApiServiceContract;
-use App\Exceptions\InvalidIVAOToken;
+use App\Exceptions\InvalidIVAOTokenException;
 
 class IVAOApiService implements  IVAOApiServiceContract{
 
@@ -90,6 +90,9 @@ class IVAOApiService implements  IVAOApiServiceContract{
 
     public function __construct($IVAOTOKEN){
         $this->IVAOTOKEN = $IVAOTOKEN;
+        if($IVAOTOKEN == 'error'){
+            throw new InvalidIVAOTokenException();
+        }
     }
 
     public function getUserData(){
@@ -100,7 +103,7 @@ class IVAOApiService implements  IVAOApiServiceContract{
         $userData = new \SimpleXMLElement($response->getBody());
 
         if($userData->result == 0){
-            //return redirect()->route('login');
+            return redirect()->route('login');
         }
 
         $this->vid = $userData->vid;

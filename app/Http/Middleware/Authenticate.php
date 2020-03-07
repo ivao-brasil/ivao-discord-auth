@@ -17,7 +17,7 @@ class Authenticate
         }
         else
         {
-            return route('login');
+            return redirect()->route('login');
         }
     }
 }
