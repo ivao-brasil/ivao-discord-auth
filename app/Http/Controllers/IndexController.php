@@ -24,6 +24,7 @@ class IndexController extends Controller
         $IVAOTOKEN = $request->input('IVAOTOKEN');
         $this->IVAOApiService = new IVAOApiService($IVAOTOKEN);
         $this->IVAOApiService->getUserData();
-        print_r($this->IVAOApiService->getFirstName());
+        $request->session()->put('IVAOTOKEN', $IVAOTOKEN);
+        return redirect('/');
     }
 }

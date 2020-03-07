@@ -2,6 +2,7 @@
 
 namespace App\Services;
 use App\Services\Contracts\IVAOApiServiceContract;
+use App\Exceptions\InvalidIVAOToken;
 
 class IVAOApiService implements  IVAOApiServiceContract{
 
@@ -97,6 +98,10 @@ class IVAOApiService implements  IVAOApiServiceContract{
         $ApiEndpoint = "http://login.ivao.aero/api.php?token=$token";
         $response = $client->get($ApiEndpoint);
         $userData = new \SimpleXMLElement($response->getBody());
+
+        if($userData->result == 0){
+            //return redirect()->route('login');
+        }
 
         $this->vid = $userData->vid;
         $this->firstName = $userData->firstname;
