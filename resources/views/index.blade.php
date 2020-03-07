@@ -6,5 +6,6 @@
         <title>.:: IVAO Discord Auth ::.</title>
     </head>
     <body>
+        <div>Teste</div>
     </body>
 </html>
