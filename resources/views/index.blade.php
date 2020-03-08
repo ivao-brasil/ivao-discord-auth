@@ -130,46 +130,54 @@
         box-shadow: inset 0 -2px 0 #fff;
     }
 
-    .logoContainer {
-        padding: 45px 35px;
-        box-sizing: border-box;
-        position: relative;
-        z-index: 2;
-        position: relative;
-        overflow: hidden;
-        display: -webkit-box;
-        display: flex;
-        -webkit-box-align: center;
-        align-items: center;
-        -webkit-box-pack: center;
-        justify-content: center;
-        -webkit-box-orient: vertical;
-        -webkit-box-direction: normal;
-        flex-direction: column;
+    @media(max-width: 650px) {
+        .logoContainer {
+            display: none;
+        }
     }
-    .logoContainer img {
-        width: 150px;
-        margin-bottom: -5px;
-        display: block;
-        position: relative;
-    }
-    .logoContainer img:first-child {
-        width: 150px;
-    }
-    .logoContainer .text {
-        padding: 25px 0 10px 0;
-    }
-    .logoContainer:before {
-        content: "";
-        background-size: cover !important;
-        position: absolute;
-        top: -50px;
-        left: -50px;
-        width: 150%;
-        height: 150%;
-        -webkit-filter: blur(10px);
-        filter: blur(10px);
-        box-shadow: inset 0 0 0 3000px rgba(255, 255, 255, 0.8);
+
+    @media(min-width: 651px) {
+        .logoContainer {
+            padding: 45px 35px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 2;
+            position: relative;
+            overflow: hidden;
+            display: -webkit-box;
+            display: flex;
+            -webkit-box-align: center;
+            align-items: center;
+            -webkit-box-pack: center;
+            justify-content: center;
+            -webkit-box-orient: vertical;
+            -webkit-box-direction: normal;
+            flex-direction: column;
+        }
+        .logoContainer img {
+            width: 150px;
+            margin-bottom: -5px;
+            display: block;
+            position: relative;
+        }
+        .logoContainer img:first-child {
+            width: 150px;
+        }
+        .logoContainer .text {
+            padding: 25px 0 10px 0;
+        }
+        .logoContainer:before {
+            content: "";
+            background-size: cover !important;
+            position: absolute;
+            top: -50px;
+            left: -50px;
+            width: 150%;
+            height: 150%;
+            -webkit-filter: blur(10px);
+            filter: blur(10px);
+            box-shadow: inset 0 0 0 3000px rgba(255, 255, 255, 0.8);
+        }
     }
 
     .forgotPas {
@@ -240,6 +248,8 @@
         "https://live.staticflickr.com/945/41807112872_60bf2bec53_h.jpg"
     ]
 
+
+    $('#container').append('<style>#container, .acceptContainer:before, .logoContainer:before {background: url(' + images[Math.floor(Math.random() * images.length)] + ') center fixed }');
 
     setInterval(() => {
         $('#container').append('<style>#container, .acceptContainer:before, .logoContainer:before {background: url(' + images[Math.floor(Math.random() * images.length)] + ') center fixed }');
