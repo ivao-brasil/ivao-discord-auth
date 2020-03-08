@@ -11,8 +11,11 @@ class IndexController extends Controller
 
     private $IVAOApiService;
 
-    public function showIndex() {
-        return view('index');
+    public function showIndex(Request $request) {
+        $IVAOTOKEN = $request->session()->get('IVAOTOKEN');
+        $this->IVAOApiService = new IVAOApiService($IVAOTOKEN);
+        $this->IVAOApiService->getUserData();
+        return view('index', ['firstName' => $this->IVAOApiService->getFirstName()]);
     }
 
     public function login() {
