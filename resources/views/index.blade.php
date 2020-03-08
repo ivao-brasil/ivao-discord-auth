@@ -53,12 +53,25 @@
         align-items: center;
     }
 
-    #inviteContainer {
-        display: -webkit-box;
-        display: flex;
-        overflow: hidden;
-        position: relative;
-        border-radius: 5px;
+    @media(max-width: 450px) {
+        #inviteContainer {
+            display: -webkit-box;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            border-radius: 5px;
+            width: 90%;
+        }
+    }
+
+    @media (min-width: 451px){
+        #inviteContainer {
+            display: -webkit-box;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            border-radius: 5px;
+        }
     }
     #inviteContainer .acceptContainer {
         padding: 45px 30px;
