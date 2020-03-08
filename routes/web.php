@@ -18,3 +18,6 @@ Route::get('/login', 'IndexController@login')->name('login');
 Route::get('/login/callback', 'IndexController@loginCallback');
 Route::get('/auth/discord','AuthController@Discord')->name('auth/discord');
 Route::get('/auth/discord/callback', 'AuthController@DiscordCallback');
+Route::get('/success',function() {
+    return view('success');
+});
