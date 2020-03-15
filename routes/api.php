@@ -20,4 +20,4 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::get('/discord/roles','APIController@getDiscordRoles');
 Route::get('/discord/actualRoles','APIController@getActualRoles');
-Route::post('/discord/saveRoles','ApiController@saveRoles');
+Route::post('/discord/saveRoles','APIController@saveRoles');
