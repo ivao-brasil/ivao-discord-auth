@@ -28,12 +28,20 @@ class AuthController extends Controller
         $IVAOTOKEN = $request->session()->get('IVAOTOKEN');
         $IVAOAPI = new IVAOApiService($IVAOTOKEN);
         $IVAOAPI->getUserData();
-        if(count($IVAOAPI->getStaff()) > 0){
-            $this->assignStaff($discordService, $IVAOAPI, $rolesData);
+        
+        try {
+            if(count($IVAOAPI->getStaff()) > 0){
+                $this->assignStaff($discordService, $IVAOAPI, $rolesData);
+            }
+            else {
+                $this->assignMember($discordService, $IVAOAPI, $rolesData);
+            }
+            return redirect('/success');
         }
-        else {
-            $this->assignMember($discordService, $IVAOAPI, $rolesData);
+        catch (Exception $e){
+
         }
+
     }
 
     private function assignMember(DiscordService $discordService, IVAOApiService $IVAOAPI, $rolesData){
