@@ -13,11 +13,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', 'IndexController@showIndex')->middleware('auth');
+Route::get('/', 'IndexController@showIndex')->middleware('auth')->name('home');
 Route::get('/login', 'IndexController@login')->name('login');
 Route::get('/login/callback', 'IndexController@loginCallback');
 Route::get('/auth/discord','AuthController@Discord')->name('auth/discord');
 Route::get('/auth/discord/callback', 'AuthController@DiscordCallback');
+Route::get('/admin', function() {
+    return view ('admin');
+})->middleware(['auth','admin']);
 Route::get('/success',function() {
     return view('success');
 });
+

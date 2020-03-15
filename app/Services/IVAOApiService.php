@@ -93,6 +93,7 @@ class IVAOApiService implements  IVAOApiServiceContract{
         if($IVAOTOKEN == 'error'){
             throw new InvalidIVAOTokenException();
         }
+        $this->getUserData();
     }
 
     public function getUserData(){

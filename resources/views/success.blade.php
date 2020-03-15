@@ -18,17 +18,28 @@
     html {
         font-family: Verdana;
     }
+
+
     .success-message {
         text-align: center;
-        max-width: 500px;
+        min-width: 50%;
+        max-width: 90%;
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
     }
 
-    .success-message__icon {
-        max-width: 75px;
+    @media(max-width: 450px){
+        .success-message__icon {
+            width: 450px;
+        }
+    }
+
+    @media(min-width: 451px){
+        .success-message__icon {
+            width: 75px;
+        }
     }
 
     .success-message__title {
@@ -36,6 +47,7 @@
         transform: translateY(25px);
         opacity: 0;
         transition: all 200ms ease;
+        font-size: 4vh;
     }
     .active .success-message__title {
         transform: translateY(0);

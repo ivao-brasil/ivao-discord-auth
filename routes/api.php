@@ -17,3 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::get('/discord/roles','APIController@getDiscordRoles');
+Route::get('/discord/actualRoles','APIController@getActualRoles');
+Route::post('/discord/saveRoles','ApiController@saveRoles');
