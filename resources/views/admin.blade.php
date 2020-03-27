@@ -15,27 +15,25 @@
                 <thead class="thead-light">
                     <tr>
                         <th scope="col">ID</th>
-                        <th scope="col">Sulfix</th>
                         <th scope="col">Roles</th>
-                        <th scope="col">Foreign Division</th>
+                        <th scope="col">Sulfix</th>
                         <th scole="col"></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="role in roles" :key="role.hash">
                         <td>${role.hash}</td>
-                        <td scope="row">
-                            <input type="text" class="form-control" v-model="role.sulfix">
-                        </td>
                         <td>
-                            <select class="custom-select custom-select-lg mb-3" multiple v-model="role.id" size="4">
+                            <select class="custom-select custom-select-lg mb-3" multiple v-model="role.id" size="4" >
                                 <option v-for="roleAvailable in rolesAvailable" :value="roleAvailable.id" :key="roleAvailable.id">
                                     ${roleAvailable.name}
                                 </option>
                             </select>
                         </td>
-                        <td>
-                            <input class="form-check-input" type="checkbox" value="" id="defaultCheck1" v-model="role.foreign">
+                        <td scope="row">
+                            <textarea rows="4" type="text" class="form-control" v-model="role.sulfix">
+
+                            </textarea>
                         </td>
                         <td>
                             <button type="button" class="btn btn-danger" @click="() => removeRole(role.hash)">

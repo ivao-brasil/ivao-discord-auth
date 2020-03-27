@@ -28,7 +28,7 @@ class AuthController extends Controller
         $IVAOTOKEN = $request->session()->get('IVAOTOKEN');
         $IVAOAPI = new IVAOApiService($IVAOTOKEN);
         $IVAOAPI->getUserData();
-        
+
         try {
             if(count($IVAOAPI->getStaff()) > 0){
                 $this->assignStaff($discordService, $IVAOAPI, $rolesData);
@@ -45,15 +45,20 @@ class AuthController extends Controller
     }
 
     private function assignMember(DiscordService $discordService, IVAOApiService $IVAOAPI, $rolesData){
-        
+        $role = array_values(array_filter($rolesData, function($role) {
+            return $role->sulfix === 'Member';
+        }))[0];
+
+        foreach($role->id as $id){
+            $discordService->addRole($id);
+        }
     }
 
     private function assignStaff(DiscordService $discordService, IVAOApiService $IVAOAPI, $rolesData) {
         $staffPos = $IVAOAPI->getStaff();
         foreach($staffPos as $staff){
-            $sulfix = explode('-',$staff)[1];
             foreach($rolesData as $role){
-                if($role->sulfix === $sulfix){
+                if(strstr($role->sulfix,$staff)){
                     foreach($role->id as $id){
                         $discordService->addRole($id);
                     }
