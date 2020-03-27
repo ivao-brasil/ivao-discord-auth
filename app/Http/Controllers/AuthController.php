@@ -46,17 +46,23 @@ class AuthController extends Controller
     }
 
     private function changeName(DiscordService $discordService, IVAOApiService $IVAOAPI){
-        if(count($IVAOAPI->getStaff()) > 0){
-            $nick = explode(" ",$IVAOAPI->getFirstName())[0]." | ";
-            foreach($IVAOAPI->getStaff() as $staff){
-                $nick .= " $staff";
+        try {
+            if(count($IVAOAPI->getStaff()) > 0){
+                $nick = explode(" ",$IVAOAPI->getFirstName())[0]." | ";
+                foreach($IVAOAPI->getStaff() as $staff){
+                    $nick .= " $staff";
+                }
             }
+            else {
+                $nick = explode(" ",$IVAOAPI->getFirstName())[0]." - ".$IVAOAPI->getVid();
+            }
+
+            print_r($nick);
         }
-        else {
-            $nick = explode(" ",$IVAOAPI->getFirstName())[0]." - ".$IVAOAPI->getVid();
+        catch(\Exception $e){
+            print_r($IVAOAPI->getVid());
         }
 
-        print_r($nick);
     }
 
     private function assignMember(DiscordService $discordService, IVAOApiService $IVAOAPI, $rolesData){
