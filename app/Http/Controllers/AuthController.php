@@ -33,9 +33,9 @@ class AuthController extends Controller
             if(count($IVAOAPI->getStaff()) > 0){
                 $this->assignStaff($discordService, $IVAOAPI, $rolesData);
             }
-            else {
-                $this->assignMember($discordService, $IVAOAPI, $rolesData);
-            }
+
+            $this->assignMember($discordService, $IVAOAPI, $rolesData);
+
             return redirect('/success');
         }
         catch (Exception $e){
