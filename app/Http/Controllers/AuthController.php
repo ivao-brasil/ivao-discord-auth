@@ -37,7 +37,7 @@ class AuthController extends Controller
             $this->assignMember($discordService, $IVAOAPI, $rolesData);
             $this->changeName($discordService, $IVAOAPI);
 
-            //return redirect('/success');
+            return redirect('/success');
         }
         catch (Exception $e){
 
@@ -46,32 +46,31 @@ class AuthController extends Controller
     }
 
     private function changeName(DiscordService $discordService, IVAOApiService $IVAOAPI){
-        try {
-            if(count($IVAOAPI->getStaff()) > 0){
-                $nick = explode(" ",$IVAOAPI->getFirstName())[0]." | ";
-                foreach($IVAOAPI->getStaff() as $staff){
-                    $nick .= " $staff";
-                }
+        if(count($IVAOAPI->getStaff()) > 0){
+            $nick = explode(" ",$IVAOAPI->getFirstName())[0]." | ";
+            foreach($IVAOAPI->getStaff() as $staff){
+                $nick .= " $staff";
             }
-            else {
-                $nick = explode(" ",$IVAOAPI->getFirstName())[0]." - ".$IVAOAPI->getVid();
-            }
-
-            print_r($nick);
         }
-        catch(\Exception $e){
-            print_r($IVAOAPI->getVid());
+        else {
+            $nick = explode(" ",$IVAOAPI->getFirstName())[0]." - ".$IVAOAPI->getVid();
         }
 
+        $discordService->changeName($nick);
     }
 
     private function assignMember(DiscordService $discordService, IVAOApiService $IVAOAPI, $rolesData){
-        $role = array_values(array_filter($rolesData, function($role) {
-            return $role->sulfix === 'Member';
-        }))[0];
+        try {
+            $role = array_values(array_filter($rolesData, function($role) {
+                return $role->sulfix === 'Member';
+            }))[0];
 
-        foreach($role->id as $id){
-            $discordService->addRole($id);
+            foreach($role->id as $id){
+                $discordService->addRole($id);
+            }
+        }
+        catch(\Exception $e){
+
         }
     }
 

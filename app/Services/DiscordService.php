@@ -54,4 +54,12 @@ class DiscordService implements  DiscordServiceContract {
     {
         $this->user = Socialite::driver('discord')->userFromToken($this->discordToken);
     }
+
+    public function changeName ($nickname){
+        $this->discordClient->guild->modifyGuildMember([
+            'guild.id' => (int)env('DISCORD_GUILD_ID'),
+            'user.id' => (int)$this->user->id,
+            'nick' => $nickname
+        ]);
+    }
 }
