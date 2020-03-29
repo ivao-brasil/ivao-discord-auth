@@ -94,7 +94,7 @@ class AuthController extends Controller
         $staffPos = $IVAOAPI->getStaff();
         foreach($staffPos as $staff){
             foreach($rolesData as $role){
-                if(strstr($role->sulfix,$staff)){
+                if($staff != '' && strstr($role->sulfix,$staff)){
                     foreach($role->id as $id){
                         $discordService->addRole($id);
                         Log::info([
