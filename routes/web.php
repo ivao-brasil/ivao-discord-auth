@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', 'IndexController@showIndex')->middleware('auth')->name('home');
-Route::get('/login', 'IndexController@login')->name('login');
-Route::get('/login/callback', 'IndexController@loginCallback');
+Route::get('/', 'MainController@showIndex')->middleware('auth')->name('home');
+Route::get('/login', 'MainController@login')->name('login');
+Route::get('/login/callback', 'MainController@loginCallback');
 Route::get('/auth/discord','AuthController@Discord')->name('auth/discord');
 Route::get('/auth/discord/callback', 'AuthController@DiscordCallback');
 Route::get('/admin', function() {

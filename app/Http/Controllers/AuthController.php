@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use Socialite;
 use App\Services\DiscordService;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -28,6 +29,11 @@ class AuthController extends Controller
         $IVAOTOKEN = $request->session()->get('IVAOTOKEN');
         $IVAOAPI = new IVAOApiService($IVAOTOKEN);
         $IVAOAPI->getUserData();
+
+        Log::info([
+            'event' => 'join.server',
+            'user' => $IVAOAPI->getVid()
+        ]);
 
         try {
             if(count($IVAOAPI->getStaff()) > 0){
@@ -57,6 +63,11 @@ class AuthController extends Controller
         }
 
         $discordService->changeName($nick);
+        Log::info([
+            'event' => 'name.changed',
+            'user' => $IVAOAPI->getVid(),
+            'role' => $nick
+        ]);
     }
 
     private function assignMember(DiscordService $discordService, IVAOApiService $IVAOAPI, $rolesData){
@@ -67,6 +78,11 @@ class AuthController extends Controller
 
             foreach($role->id as $id){
                 $discordService->addRole($id);
+                Log::info([
+                    'event' => 'role.assignment',
+                    'user' => $IVAOAPI->getVid(),
+                    'role' => $role->name
+                ]);
             }
         }
         catch(\Exception $e){
@@ -81,6 +97,11 @@ class AuthController extends Controller
                 if(strstr($role->sulfix,$staff)){
                     foreach($role->id as $id){
                         $discordService->addRole($id);
+                        Log::info([
+                            'event' => 'role.assignment',
+                            'user' => $IVAOAPI->getVid(),
+                            'role' => $role->name
+                        ]);
                     }
                 }
             }

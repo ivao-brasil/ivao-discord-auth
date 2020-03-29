@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\IVAOApiService;
 
 
-class IndexController extends Controller
+class MainController extends Controller
 {
 
     private $IVAOApiService;
