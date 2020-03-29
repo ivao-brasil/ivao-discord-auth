@@ -114,11 +114,10 @@ class IVAOApiService implements  IVAOApiServiceContract{
         $this->ratingPilot = $userData->ratingpilot;
         $this->division = $userData->division;
         $this->country = $userData->country;
-        if($userData->staff == null){
+        if(strstr(":",$userData->staff)) {
+            $this->staff = explode(":", $userData->staff);
+        } else {
             $this->staff = [];
-        }
-        else {
-            $this->staff = explode(":",$userData->staff);
         }
     }
 }
