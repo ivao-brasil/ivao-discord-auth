@@ -52,7 +52,7 @@ class AuthController extends Controller
     }
 
     private function changeName(DiscordService $discordService, IVAOApiService $IVAOAPI){
-        if(count($IVAOAPI->getStaff()) > 0){
+        if($IVAOAPI->getStaff() != [''] && count($IVAOAPI->getStaff()) > 0) {
             $nick = explode(" ",$IVAOAPI->getFirstName())[0]." | ";
             foreach($IVAOAPI->getStaff() as $staff){
                 $nick .= " $staff";
