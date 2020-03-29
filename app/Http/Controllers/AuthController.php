@@ -81,7 +81,7 @@ class AuthController extends Controller
                 Log::info([
                     'event' => 'role.assignment',
                     'user' => $IVAOAPI->getVid(),
-                    'role' => $role->name
+                    'role' => $role->id
                 ]);
             }
         }
@@ -100,7 +100,7 @@ class AuthController extends Controller
                         Log::info([
                             'event' => 'role.assignment',
                             'user' => $IVAOAPI->getVid(),
-                            'role' => $role->name
+                            'role' => $role->id
                         ]);
                     }
                 }
