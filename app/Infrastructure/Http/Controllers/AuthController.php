@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use Socialite;
-use App\Services\DiscordService;
+use App\Services\GuildService;
 use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
@@ -19,7 +19,7 @@ class AuthController extends Controller
     public function DiscordCallback(Request $request){
         $user = Socialite::driver('discord')->user();
         $request->session()->put('DISCORD_TOKEN', $user->token);
-        $discordService = new DiscordService($user->token);
+        $discordService = new GuildService($user->token);
         $discordService->joinInTheServer();
 
         $contents = Storage::disk('local')->get('roles');
@@ -51,7 +51,7 @@ class AuthController extends Controller
 
     }
 
-    private function changeName(DiscordService $discordService, IVAOApiService $IVAOAPI){
+    private function changeName(GuildService $discordService, IVAOApiService $IVAOAPI){
         if(count($IVAOAPI->getStaff()) > 0){
             $nick = explode(" ",$IVAOAPI->getFirstName())[0]." | ";
             foreach($IVAOAPI->getStaff() as $staff){
@@ -70,10 +70,10 @@ class AuthController extends Controller
         ]);
     }
 
-    private function assignMember(DiscordService $discordService, IVAOApiService $IVAOAPI, $rolesData){
+    private function assignMember(GuildService $discordService, IVAOApiService $IVAOAPI, $rolesData){
         try {
             $role = array_values(array_filter($rolesData, function($role) {
-                return $role->sulfix === 'Member';
+                return $role->sulfix === 'DiscordManager';
             }))[0];
 
             foreach($role->id as $id){
@@ -90,7 +90,7 @@ class AuthController extends Controller
         }
     }
 
-    private function assignStaff(DiscordService $discordService, IVAOApiService $IVAOAPI, $rolesData) {
+    private function assignStaff(GuildService $discordService, IVAOApiService $IVAOAPI, $rolesData) {
         $staffPos = $IVAOAPI->getStaff();
         foreach($staffPos as $staff){
             foreach($rolesData as $role){

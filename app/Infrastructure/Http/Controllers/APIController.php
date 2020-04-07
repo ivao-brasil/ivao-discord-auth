@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
-use App\Services\DiscordService;
+use App\Services\GuildService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 
 class APIController extends Controller
 {
     function getDiscordRoles(Request $request){
-        $discordService = new DiscordService('');
+        $discordService = new GuildService('');
         $roles = $discordService->getRoles();
         for($i=0; $i<count($roles); $i++){
             $roles[$i]->id = (string)$roles[$i]->id;

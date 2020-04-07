@@ -1,0 +1,59 @@
+<?php
+
+
+namespace App\Infrastructure\Services;
+use App\Domain\Entities\Guild;
+use App\Domain\Entities\Member;
+use App\Domain\Entities\Roles;
+use App\Services\Contracts\GuildServiceContract;
+use RestCord\DiscordClient;
+
+class DiscordGuildService implements GuildServiceContract
+{
+    private $discordClient;
+
+    public function __construct(DiscordClient $discordClient)
+    {
+        $this->discordClient = $discordClient;
+    }
+
+    public function addMember(Member $member, Guild $guild)
+    {
+        $this->discordClient->guild->addGuildMember([
+            'guild.id' => (int)$guild->getId(),
+            'user.id' => (int)$member->getDiscordId(),
+            'access_token' => $member->getDiscordAccessToken()
+        ]);
+
+        $member->getRoles()->each(function($role) use ($member, $guild) {
+            $this->addRoleToMember($member, $role, $guild);
+        });
+
+        $this->changeMemberNickname($member, $guild);
+    }
+
+    private function addRoleToMember(Member $member, Roles $role, Guild $guild)
+    {
+        $this->discordClient->guild->addGuildMemberRole([
+            'guild.id' => (int)$guild->getId(),
+            'user.id' => (int)$member->getDiscordId(),
+            'role.id' => $role->getId()
+        ]);
+    }
+
+    public function getServerRoles(Guild $guild)
+    {
+        return $this->discordClient->guild->getGuildRoles([
+            'guild.id' => (int)$guild->getId()
+        ]);
+    }
+
+    private function changeMemberNickname(Member $member, Guild $guild)
+    {
+        $this->discordClient->guild->modifyGuildMember([
+            'guild.id' => (int)$guild->getId(),
+            'user.id' => (int)$member->getDiscordId(),
+            'nick' => $member->generateNickname()
+        ]);
+    }
+}
