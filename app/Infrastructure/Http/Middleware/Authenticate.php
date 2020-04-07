@@ -2,21 +2,28 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Contracts\IVAOApiServiceContract;
 use Closure;
-use App\Services\IVAOApiService;
 
 class Authenticate
 {
+    private $IVAOAPI;
+
+    /**
+     * Authenticate constructor.
+     * @param $IVAOAPI
+     */
+    public function __construct(IVAOApiServiceContract $IVAOAPI)
+    {
+        $this->IVAOAPI = $IVAOAPI;
+    }
+
     public function handle($request, Closure $next)
     {
-        $IVAOTOKEN = $request->session()->get('IVAOTOKEN');
-        $IVAOAPI = new IVAOApiService($IVAOTOKEN);
-        $IVAOAPI->getUserData();
-        if($IVAOAPI->getFirstName() != ""){
+        $memberData = $this->IVAOAPI->getUserData();
+        if($memberData['firstname'] != '') {
             return $next($request);
-        }
-        else
-        {
+        } else {
             return redirect()->route('login');
         }
     }

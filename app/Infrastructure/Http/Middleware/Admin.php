@@ -2,13 +2,23 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Contracts\IVAOApiServiceContract;
 use Closure;
-
-use App\Services\IVAOApiService;
 
 
 class Admin
 {
+    private $IVAOAPI;
+
+    /**
+     * Admin constructor.
+     * @param $IVAOAPI
+     */
+    public function __construct(IVAOApiServiceContract $IVAOAPI)
+    {
+        $this->IVAOAPI = $IVAOAPI;
+    }
+
     /**
      * Handle an incoming request.
      *
@@ -18,13 +28,11 @@ class Admin
      */
     public function handle($request, Closure $next)
     {
-        $vids = explode(':',env('ADMIN_VIDS'));
-        $IVAOTOKEN = $request->session()->get('IVAOTOKEN');
-        $IVAOAPI = new IVAOApiService($IVAOTOKEN);
-        if(in_array($IVAOAPI->getVid(), $vids)){
+        $vids = explode(":", env('ADMIN_VIDS'));
+        $memberData = $this->IVAOAPI->getUserData();
+        if(in_array($memberData['vid'], $vids)) {
             return $next($request);
-        }
-        else {
+        } else {
             return redirect()->route('home');
         }
     }

@@ -4,14 +4,15 @@
 namespace App\Infrastructure\Services;
 
 
-use App\Services\Contracts\IVAOApiServiceContract;
+use App\Core\Constants;
+use App\Domain\Contracts\IVAOApiServiceContract;
 use Illuminate\Support\Facades\Http;
 
 class IVAOApiService implements IVAOApiServiceContract
 {
     private $IVAOTOKEN;
     private $data;
-    private const ENDPOINT = "http://login.ivao.aero/api.php";
+    private const ENDPOINT = Constants::IVAO_API_URL;
     private $httpClient;
 
     /**

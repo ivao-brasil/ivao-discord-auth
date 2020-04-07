@@ -5,7 +5,7 @@ namespace App\Infrastructure\Services;
 use App\Domain\Entities\Guild;
 use App\Domain\Entities\Member;
 use App\Domain\Entities\Roles;
-use App\Services\Contracts\GuildServiceContract;
+use App\Domain\Contracts\GuildServiceContract;
 use RestCord\DiscordClient;
 
 class DiscordGuildService implements GuildServiceContract

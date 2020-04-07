@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\Services\Contracts;
+namespace App\Domain\Contracts;
 
 
 interface IVAOApiServiceContract {

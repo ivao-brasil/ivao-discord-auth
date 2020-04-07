@@ -1,12 +1,12 @@
 <?php
 
 
-namespace App\Services\Contracts;
+namespace App\Domain\Contracts;
 
 
 use App\Domain\Entities\Guild;
 use App\Domain\Entities\Member;
-use App\Domain\Entities\Roles;
+
 
 interface GuildServiceContract
 {

@@ -2,7 +2,6 @@
 
 
 namespace App\Domain\Entities;
-use App\Services\Contracts\GuildServiceContract;
 
 class Guild
 {

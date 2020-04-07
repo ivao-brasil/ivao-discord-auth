@@ -3,8 +3,8 @@
 
 namespace App\Domain\Entities;
 
-use App\Services\Contracts\GuildServiceContract;
-use App\Services\Contracts\IVAOApiServiceContract;
+use App\Domain\Contracts\GuildServiceContract;
+use App\Domain\IVAOApiServiceContract;
 use Illuminate\Support\Collection;
 
 class Member
@@ -12,6 +12,9 @@ class Member
     private $vid;
     private $firstName;
     private $division;
+
+    /** @var Collection  */
+
     private $staff;
     private $discordId;
     private $discordAccessToken;
@@ -56,9 +59,9 @@ class Member
         $this->division = $userData['division'];
 
         if ($userData['staff'] != null) {
-            $this->staff = explode(":", $userData['staff']);
+            $this->staff = Collection::make(explode(":", $userData['staff']));
         } else {
-            $this->staff = [];
+            $this->staff = Collection::make();
         }
     }
 
@@ -71,7 +74,19 @@ class Member
         $guildService->addMember($this->discordId, $guild->getId());
     }
 
-    public function generateNickname(){
+    private function isStaff() {
+        return $this->staff->isNotEmpty();
+    }
+    public function generateNickname() {
+        if($this->isStaff()) {
+            $nick = explode(" ", $this->firstName)[0]." | ";
+            $this->staff->each(function($staff) use ($nick) {
+               $nick .= " $staff";
+            });
+        } else {
+            $nick = explode(" ", $this->firstName)[0]." - $this->vid";
+        }
 
+        return $nick;
     }
 }
