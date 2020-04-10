@@ -1,78 +1,65 @@
-<p align="center"><img src="https://res.cloudinary.com/dtfbvvkyp/image/upload/v1566331377/laravel-logolockup-cmyk-red.svg" width="400"></p>
-
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
+<p align="right">
+<img src="https://ivao.aero/publrelat/branding/svg_logos/br.svg" width="150"> <img align="left" src="https://seeklogo.com/images/D/discord-logo-B02E5FBA04-seeklogo.com.png" width="200">
 </p>
 
-## About Laravel
+## About
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This system provide a Discord Validation tool based on IVAO API for every IVAO Division. Read the following topics in order to know how install it.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Once that this tool is based at [Laravel Framework](https://laravel.com/docs/7.x) for PHP, the system requirements is the same requirements of the framework. Please visit Laravel Documentation to discover it.
 
-## Learning Laravel
+## Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+You can transfer the source code to your server using following options:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+1. Download it to .zip file and upload it to your server or
+2. Use git clone command to clone this repository (remember to get master branch);
 
-## Laravel Sponsors
+After that, follow the procedure below to put your application working.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+1. Install depedencies using composer.
+2. Create a .env from example.env and set the following values:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[British Software Development](https://www.britishsoftware.co)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- [UserInsights](https://userinsights.com)
-- [Fragrantica](https://www.fragrantica.com)
-- [SOFTonSOFA](https://softonsofa.com/)
-- [User10](https://user10.com)
-- [Soumettre.fr](https://soumettre.fr/)
-- [CodeBrisk](https://codebrisk.com)
-- [1Forge](https://1forge.com)
-- [TECPRESSO](https://tecpresso.co.jp/)
-- [Runtime Converter](http://runtimeconverter.com/)
-- [WebL'Agence](https://weblagence.com/)
-- [Invoice Ninja](https://www.invoiceninja.com)
-- [iMi digital](https://www.imi-digital.de/)
-- [Earthlink](https://www.earthlink.ro/)
-- [Steadfast Collective](https://steadfastcollective.com/)
-- [We Are The Robots Inc.](https://watr.mx/)
-- [Understand.io](https://www.understand.io/)
-- [Abdel Elrafa](https://abdelelrafa.com)
-- [Hyper Host](https://hyper.host)
-- [Appoly](https://www.appoly.co.uk)
-- [OP.GG](https://op.gg)
+    * `APP_KEY`: You can use  `php artisan key:generate` command to generate it.
 
-## Contributing
+        <b>NOTE:</b> You need to have access to the server terminal to use `php artisan key:generate` command. If you don't have it, you can run the command locally in your machine and copy the key generated to your server. 
+		
+    * `APP_URL`: The url of your application
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    * `DISCORD_CLIENT_ID`: The <b>CLIENT ID</b> of your Discord Application (you need to create it at [Discord Developer Portal](https://discordapp.com/developers/applications))
 
-## Code of Conduct
+    * `DISCORD_CLIENT_SECRET`: The <b>CLIENT SECRET</b> of your Discord application
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+    * `DISCORD_BOT_TOKEN`: The <b>ACCESS TOKEN</b> for your bot application, remember to register it at your server and give the necessary permission to handle all other roles.
 
-## Security Vulnerabilities
+    * `DISCORD_GUILD_ID`: The <b>ID</b> of your server
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+    * `ADMIN_VIDS`: The VID of system admins separated by a colon "<b>:</b>". For example: "<b>999999:999998</b>"
 
-## License
+    * `LANGUAGE`: The language you want to use, see `Language` topic below.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Using
+
+1. You need to visit the /admin endpoint with account registered as admin according step 3 of installation procedure.
+2. Automatically, the system will get all roles available at your server. You can create a new rule by clicking at add button and select the role, at suffix you can use two different options:
+
+    * Set the staff positions that will receive the roles, separated by "<b>:</b>". For example: `BR-WM:BR-AWM`;
+    
+	* Set `Member` for the users that don't comply with other requirements, if you want to restrict the server just for staffs, just don't create a rule with this suffix.
+3. Once that you have seted all rules for roles assignment, just access the root path of application and enjoy it.
+
+## Language
+
+Actually the system has some languages available according the following list:
+
+* English (en);
+* Portuguese - Brazil (pt-Br);
+* Spanish (es);
+
+The actual language is seted by env variable `LANGUAGE`.
+
+## Inserting new Languages
+
+To insert new languages you need to make a copy from `resources/lang/en` folder to new folder with preffix of the new language, for example: `resoruces/lang/fr` for French. After that just edit the file `text.php` and translate the entries of language array.

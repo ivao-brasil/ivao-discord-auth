@@ -26,3 +26,7 @@ Route::get('/success',function() {
     return view('success');
 });
 
+
+Route::get('/api/discord/roles','APIController@getDiscordRoles')->middleware(['auth', 'admin']);
+Route::get('/api/discord/actualRoles','APIController@getActualRoles')->middleware(['auth', 'admin']);
+Route::post('/api/discord/saveRoles','APIController@saveRoles')->middleware(['auth', 'admin']);

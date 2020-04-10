@@ -6,9 +6,9 @@
                 <circle cx="38" cy="38" r="36"/>
                 <path fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M17.7,40.9l10.9,10.9l28.7-28.7"/>
             </svg>
-            <h1 class="success-message__title">Permissão Concedida</h1>
+            <h1 class="success-message__title">@lang('text.successTitle')</h1>
             <div class="success-message__content">
-                <p>Basta acessar o nosso servidor e interagir!</p>
+                <p>@lang('text.successBody')</p>
             </div>
         </div>
     </body>

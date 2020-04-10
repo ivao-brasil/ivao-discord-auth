@@ -8,5 +8,7 @@ return [
     'loginBtn' => 'Login',
     'generalException' => 'Ooops! We had a problem',
     'invalidTokenException' => 'This site have no permission to use IVAO Login API',
-    'invalidPermissionException' => 'You have no permission to access this server'
+    'invalidPermissionException' => 'You have no permission to access this server',
+    'successTitle' => 'Permission given',
+    'successBody' => 'Enjoy our server!'
 ];
