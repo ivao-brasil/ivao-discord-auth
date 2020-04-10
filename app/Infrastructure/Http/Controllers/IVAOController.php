@@ -1,33 +1,31 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Infrastructure\Http\Controllers;
 
 use App\Core\Constants;
+use App\Exceptions\InvalidIVAOTokenException;
 use Illuminate\Http\Request;
-use App\Services\IVAOApiService;
+//use App\Services\IVAOApiService;
 
 
 class IVAOController extends Controller
 {
-
-    private $IVAOApiService;
-
-    public function showIndex(Request $request) {
-        $IVAOTOKEN = $request->session()->get('IVAOTOKEN');
-        $this->IVAOApiService = new IVAOApiService($IVAOTOKEN);
-        $this->IVAOApiService->getUserData();
-        return view('index', ['firstName' => $this->IVAOApiService->getFirstName()]);
-    }
+    private const IVAO_API_URL = "https://login.ivao.aero/index.php";
 
     public function login() {
-        $ROUTE = env('APP_URL').'/login/callback';
-        $IVAO_API_URL = Constants::IVAO_API_URL;
-        return redirect()->away("$IVAO_API_URL?url=$ROUTE");
+        $ROUTE = env('APP_URL').'/ivao/callback';
+        return redirect()->away(self::IVAO_API_URL."?url=$ROUTE");
     }
 
     public function loginCallback(Request $request){
         $IVAOTOKEN = $request->input('IVAOTOKEN');
-        $request->session()->put('IVAOTOKEN', $IVAOTOKEN);
-        return redirect('/');
+
+        if($IVAOTOKEN != 'error') {
+            $request->session()->put('IVAOTOKEN', $IVAOTOKEN);
+            return redirect('/');
+        }
+        else {
+            throw new InvalidIVAOTokenException();
+        }
     }
 }

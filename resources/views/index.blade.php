@@ -14,14 +14,14 @@
                 <div class="logoContainer"><img class="logo" src="https://seeklogo.com/images/D/discord-logo-134E148657-seeklogo.com.png" /><img class="text" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Discord_Color_Text_Logo.svg/2000px-Discord_Color_Text_Logo.svg.png" /></div>
                 <div class="acceptContainer">
                     <form>
-                        <h1>Bem-vindo, {{$firstName}}</h1>
+                        <h1>@lang('text.welcome'), {{$firstName}}</h1>
                         <div class="formContainer">
                             <div class="formDiv">
-                                <p>Por favor, use o botão abaixo para autenticar usando a sua conta do Discord e ingressar no nosso Servidor</p>
+                                <p>@lang('text.authInstruction')</p>
                             </div>
                             <div class="formDiv">
-                                <button class="acceptBtn" type="button" onclick="window.location.href='{{ url('auth/discord') }}'">Login</button>
-                                <span class="register">Ainda não tem uma conta?<a href="https://discordapp.com/register" target="_blank">Crie agora!</a></span>
+                                <button class="acceptBtn" type="button" onclick="window.location.href='{{ url('discord/login') }}'">@lang('text.loginBtn')</button>
+                                <span class="register">@lang('text.noAccount')<a href="https://discordapp.com/register" target="_blank">@lang('text.createAccount')</a></span>
                             </div>
                         </div>
                     </form>

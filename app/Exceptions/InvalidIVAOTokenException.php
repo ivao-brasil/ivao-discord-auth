@@ -7,6 +7,6 @@ use Exception;
 class InvalidIVAOTokenException extends Exception
 {
     public function render($request){
-        return response("INVALID IVAO TOKEN",400);
-    }
+    return view('houston', ['text' =>  __('text.invalidTokenException')]);
+}
 }

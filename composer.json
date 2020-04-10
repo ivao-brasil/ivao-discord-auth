@@ -16,7 +16,8 @@
         "laravel/socialite": "^4.3",
         "laravel/tinker": "^2.0",
         "restcord/restcord": "dev-master",
-        "socialiteproviders/discord": "^2.0"
+        "socialiteproviders/discord": "^2.0",
+      "ext-json": "*"
     },
     "require-dev": {
         "facade/ignition": "^2.0",

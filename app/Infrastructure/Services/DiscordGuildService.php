@@ -11,10 +11,20 @@ use RestCord\DiscordClient;
 class DiscordGuildService implements GuildServiceContract
 {
     private $discordClient;
+    private $guildId;
 
-    public function __construct(DiscordClient $discordClient)
+    /**
+     * @return mixed
+     */
+    public function getGuildId()
+    {
+        return $this->guildId;
+    }
+
+    public function __construct(DiscordClient $discordClient, $guildId)
     {
         $this->discordClient = $discordClient;
+        $this->guildId = $guildId;
     }
 
     public function addMember(Member $member, Guild $guild)

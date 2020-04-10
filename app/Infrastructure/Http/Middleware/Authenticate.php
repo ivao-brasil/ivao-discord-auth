@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace App\Infrastructure\Http\Middleware;
 
 use App\Domain\Contracts\IVAOApiServiceContract;
 use Closure;
@@ -24,7 +24,8 @@ class Authenticate
         if($memberData['firstname'] != '') {
             return $next($request);
         } else {
-            return redirect()->route('login');
+            return response()->redirectTo('ivao/login');
+            //return response()->json($memberData);
         }
     }
 }

@@ -80,7 +80,6 @@
                 roles.push({
                     sulfix: '',
                     id: [],
-                    foreign: false,
                     hash: this.randomHash()
                 })
                 this.roles = roles;

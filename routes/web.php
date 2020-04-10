@@ -14,12 +14,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', 'MainController@showIndex')->middleware('auth')->name('home');
-Route::get('/login', 'MainController@login')->name('login');
-Route::get('/login/callback', 'MainController@loginCallback');
+Route::get('/ivao/login', 'IVAOController@login')->name('login');
+Route::get('/ivao/callback', 'IVAOController@loginCallback');
+Route::get('/discord/login','DiscordController@login')->name('auth/discord');
+Route::get('/discord/callback', 'DiscordController@loginCallback');
 
-
-Route::get('/auth/discord','AuthController@Discord')->name('auth/discord');
-Route::get('/auth/discord/callback', 'AuthController@DiscordCallback');
 Route::get('/admin', function() {
     return view ('admin');
 })->middleware(['auth','admin']);

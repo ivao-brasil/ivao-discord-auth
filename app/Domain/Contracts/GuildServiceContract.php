@@ -12,4 +12,5 @@ interface GuildServiceContract
 {
     public function addMember(Member $member, Guild $guild);
     public function getServerRoles(Guild $guild);
+    public function getGuildId();
 }
