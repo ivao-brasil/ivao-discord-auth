@@ -6,10 +6,19 @@ namespace App\Domain\Entities;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Contracts\IVAOApiServiceContract;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class Member
 {
     private $vid;
+
+    /**
+     * @return mixed
+     */
+    public function getVid()
+    {
+        return $this->vid;
+    }
     private $firstName;
     private $division;
     /** @var Collection */
@@ -74,6 +83,10 @@ class Member
     public function setRoles(Collection $roles): void
     {
         $this->roles = $roles;
+        Log::info([
+            'event' => 'assign.roles',
+            'roles' => $roles
+        ]);
     }
 
     /**
@@ -111,6 +124,10 @@ class Member
     public function joinGuild(Guild $guild, GuildServiceContract $guildService)
     {
         $guildService->addMember($this, $guild);
+        Log::info([
+            'event' => 'join.server',
+            'user' => $this->vid
+        ]);
     }
 
     public function generateNickname()

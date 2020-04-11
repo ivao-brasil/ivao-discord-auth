@@ -13,6 +13,7 @@ use App\Domain\Entities\Guild;
 use App\Exceptions\GeneralErrorException;
 use App\Exceptions\InvalidPermissionException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
 {

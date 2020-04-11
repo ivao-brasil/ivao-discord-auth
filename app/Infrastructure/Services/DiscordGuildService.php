@@ -7,6 +7,7 @@ use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Entities\Guild;
 use App\Domain\Entities\Member;
 use App\Domain\Entities\Roles;
+use Illuminate\Support\Facades\Log;
 use RestCord\DiscordClient;
 
 class DiscordGuildService implements GuildServiceContract
