@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Http\Controllers;
 use App\Domain\Contracts\GuildServiceContract;
+use App\Domain\Contracts\RolesServiceContract;
 use App\Domain\Entities\Guild;
 use Illuminate\Http\Request;
 use App\Infrastructure\Services\DiscordGuildService;
@@ -12,14 +13,16 @@ use Illuminate\Support\Collection;
 class APIController extends Controller
 {
     private $discordGuildService;
+    private $roleService;
 
     /**
      * APIController constructor.
      * @param $discordGuildService
      */
-    public function __construct(GuildServiceContract $discordGuildService)
+    public function __construct(GuildServiceContract $discordGuildService, RolesServiceContract $roleService)
     {
         $this->discordGuildService = $discordGuildService;
+        $this->roleService = $roleService;
     }
 
     function getDiscordRoles(Request $request){
@@ -32,15 +35,11 @@ class APIController extends Controller
     }
 
     function getActualRoles(Request $request){
-        $contents = Storage::disk('local')->get('roles');
-        $data = Crypt::decryptString($contents);
-        return response()->json(json_decode($data));
+        return $this->roleService->getAllRoles();
     }
 
     function saveRoles(Request $request){
-        $data = json_encode($request->all());
-        $data = Crypt::encryptString($data);
-        Storage::disk('local')->put('roles', $data);
+        return $this->roleService->saveAllRoles($request->all());
     }
 
 }

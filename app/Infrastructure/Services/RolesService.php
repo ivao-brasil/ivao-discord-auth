@@ -7,7 +7,8 @@ use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 
-class RolesService implements RolesServiceContract {
+class RolesService implements RolesServiceContract
+{
 
     public function getAllRoles()
     {
@@ -18,5 +19,11 @@ class RolesService implements RolesServiceContract {
         } catch (FileNotFoundException $e) {
             return json_decode("[]");
         }
+    }
+
+    public function saveAllRoles($rolesData){
+        $data = json_encode($rolesData);
+        $data = Crypt::encryptString($data);
+        Storage::disk('local')->put('roles', $data);
     }
 }
