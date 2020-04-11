@@ -40,6 +40,10 @@ After that, follow the procedure below to put your application working.
 
     * `LANGUAGE`: The language you want to use, see `Language` topic below.
 
+    * `DEFAULT_TITLE`: The default HTML title for pages. The words is separated by `_` instead of normal space. For example: `IVAO_BR_Discord_Auth_System` will result in a title like `IVAO BR Discord Auth System`
+
+
+    <b>NOTE:</b> You will need to create a Discord Application in order to get the CLIENT_ID. Make sure to add your application path `/discord/callback`, for example `discord.br.ivao.aero/discord/callback`, as redirect URL for OAuth2, otherwise, the Discord Auth will not work correctly. 
 ## Using
 
 1. You need to visit the /admin endpoint with account registered as admin according step 3 of installation procedure.
@@ -56,7 +60,7 @@ Actually the system has some languages available according the following list:
 
 * English (en);
 * Portuguese - Brazil (pt-Br);
-* Spanish (es);
+* Spanish (es) (Credits to member: <b>548746</b> by the help);
 
 The actual language is seted by env variable `LANGUAGE`.
 

@@ -1,5 +1,5 @@
 <html>
-
+<title>{{str_replace('_',' ', env('DEFAULT_TITLE'))}}</title>
 <body>
 <div class="success-message">
     <img alt="teste" id="img" src="{{asset('assets/imgs/houston-we-have-a-problem.jpeg')}}"/>

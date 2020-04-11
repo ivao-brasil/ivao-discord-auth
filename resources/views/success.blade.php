@@ -1,5 +1,5 @@
 <html>
-
+<title>{{str_replace('_',' ', env('DEFAULT_TITLE'))}}</title>
     <body>
         <div class="success-message">
             <svg viewBox="0 0 76 76" class="success-message__icon icon-checkmark">
