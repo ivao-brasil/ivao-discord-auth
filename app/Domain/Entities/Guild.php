@@ -10,14 +10,6 @@ class Guild
     private $id;
 
     /**
-     * @return mixed
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    /**
      * Guild constructor.
      * @param $id
      */
@@ -26,7 +18,16 @@ class Guild
         $this->id = $id;
     }
 
-    static function FromService(GuildServiceContract $guild){
+    static function FromService(GuildServiceContract $guild)
+    {
         return new self($guild->getGuildId());
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getId()
+    {
+        return $this->id;
     }
 }
