@@ -63,7 +63,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         try {
             $roles = $this->getRolesToAssign($member);
             $guild = Guild::FromService($this->DiscordGuildService);
-            if($roles->isNotEmpty()) {
+            if($roles->isNotEmpty() && $member->isActive()) {
                 $member->setRoles($roles);
                 $member->joinGuild($guild, $this->DiscordGuildService);
             } else {

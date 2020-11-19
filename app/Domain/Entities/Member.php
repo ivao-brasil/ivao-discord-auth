@@ -29,6 +29,7 @@ class Member
     /** @var Collection */
 
     private $roles;
+    private $accountStatus;
 
     /**
      * Member constructor.
@@ -45,6 +46,8 @@ class Member
         } else {
             $this->staff = Collection::make();
         }
+
+        $this->accountStatus = $userData['rating'];
     }
 
     public static function FromAPIRequest(IVAOApiServiceContract $IVAOAPI)
@@ -143,5 +146,9 @@ class Member
     public function isStaff()
     {
         return $this->staff->isNotEmpty();
+    }
+
+    public function isActive() {
+        return in_array($this->accountStatus, array(2, 11,12));
     }
 }
