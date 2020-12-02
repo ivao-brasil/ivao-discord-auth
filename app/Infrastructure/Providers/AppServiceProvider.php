@@ -4,9 +4,11 @@ namespace App\Infrastructure\Providers;
 
 use App\Application\Contracts\DiscordIVAOAuthServiceInterface;
 use App\Application\DiscordIVAOAuthService;
+use App\Domain\Contracts\ConsentmentServiceContract;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Contracts\IVAOApiServiceContract;
 use App\Domain\Contracts\RolesServiceContract;
+use App\Infrastructure\Services\ConsentmentService;
 use App\Infrastructure\Services\DiscordGuildService;
 use App\Infrastructure\Services\IVAOApiService;
 use App\Infrastructure\Services\RolesService;
@@ -35,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(RolesServiceContract::class, RolesService::class);
+
+        $this->app->bind(ConsentmentServiceContract::class, ConsentmentService::class);
     }
 
     /**

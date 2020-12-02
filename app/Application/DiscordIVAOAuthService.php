@@ -4,9 +4,11 @@
 namespace App\Application;
 
 use App\Application\Contracts\DiscordIVAOAuthServiceInterface;
+use App\Domain\Contracts\ConsentmentServiceContract;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Contracts\IVAOApiServiceContract;
 use App\Domain\Contracts\RolesServiceContract;
+use App\Domain\Entities\Consentment;
 use App\Domain\Entities\Member;
 use App\Domain\Entities\Roles;
 use App\Domain\Entities\Guild;
@@ -20,6 +22,8 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
     private $IVAOAPIService;
     private $DiscordGuildService;
     private $RolesService;
+    private $ConsentmentService;
+    private $DiscordService;
 
     /**
      * DiscordIVAOAuthService constructor.
@@ -27,11 +31,19 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
      * @param $DiscordGuildService
      * @param $RolesService
      */
-    public function __construct(IVAOApiServiceContract $IVAOAPIService, GuildServiceContract $DiscordGuildService, RolesServiceContract $RolesService)
+    public function __construct(
+        IVAOApiServiceContract $IVAOAPIService,
+        GuildServiceContract $DiscordGuildService,
+        RolesServiceContract $RolesService,
+        ConsentmentServiceContract $ConsentmentService,
+        GuildServiceContract $DiscordService
+    )
     {
         $this->IVAOAPIService = $IVAOAPIService;
         $this->DiscordGuildService = $DiscordGuildService;
         $this->RolesService = $RolesService;
+        $this->ConsentmentService = $ConsentmentService;
+        $this->DiscordService = $DiscordService;
     }
 
     /**
@@ -58,19 +70,35 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         });
     }
 
+    private function createConsentment(Member $member, $roles) {
+        $consentment = new Consentment([
+            'userVid' => $member->getVid(),
+            'discordId' => $member->getDiscordId(),
+            'nickName' => $member->generateNickname(),
+            'roles' => $roles
+        ]);
+
+        $this->ConsentmentService->create($consentment);
+    }
+
     public function validateMember(Member $member)
     {
-        try {
-            $roles = $this->getRolesToAssign($member);
-            $guild = Guild::FromService($this->DiscordGuildService);
-            if($roles->isNotEmpty() && $member->isActive()) {
-                $member->setRoles($roles);
-                $member->joinGuild($guild, $this->DiscordGuildService);
-            } else {
-                throw new InvalidPermissionException();
-            }
-        } catch (\Exception $e){
+        $roles = $this->getRolesToAssign($member);
+        $guild = Guild::FromService($this->DiscordGuildService);
+        if($roles->isNotEmpty() && $member->isActive()) {
+            $member->setRoles($roles);
+            $member->joinGuild($guild, $this->DiscordGuildService);
+            $this->createConsentment($member, $roles->map(function(Roles $role) use ($guild) {
+                return $this->DiscordService->getRolename($guild, $role);
+            })->join(':'));
+        } else {
             throw new InvalidPermissionException();
         }
+
+        /*try {
+
+        } catch (\Exception $e){
+            throw new InvalidPermissionException();
+        }*/
     }
 }

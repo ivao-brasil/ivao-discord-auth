@@ -9,6 +9,8 @@ use App\Domain\Entities\Member;
 use App\Domain\Entities\Roles;
 use Illuminate\Support\Facades\Log;
 use RestCord\DiscordClient;
+use Illuminate\Support\Collection;
+use RestCord\Model\Guild\Role;
 
 class DiscordGuildService implements GuildServiceContract
 {
@@ -67,5 +69,11 @@ class DiscordGuildService implements GuildServiceContract
         return $this->discordClient->guild->getGuildRoles([
             'guild.id' => (int)$guild->getId()
         ]);
+    }
+
+    public function getRolename(Guild $guild, Roles $role) {
+        return Collection::make($this->discordClient->guild->getGuildRoles([
+            'guild.id' => (int)$guild->getId()
+        ]))->firstWhere('id', $role->getId())->name;
     }
 }
