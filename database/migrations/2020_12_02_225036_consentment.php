@@ -19,6 +19,8 @@ class Consentment extends Migration
             $table->string('discordId', 64);
             $table->string('nickName');
             $table->string('roles');
+            $table->string('division', 2);
+            $table->boolean('status');
             $table->timestamps();
         });
     }

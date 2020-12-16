@@ -12,6 +12,8 @@ class ConsentmentModel extends Model
         "userVid",
         "discordId",
         "nickName",
-        "roles"
+        "roles",
+        "division",
+        "status"
     ];
 }

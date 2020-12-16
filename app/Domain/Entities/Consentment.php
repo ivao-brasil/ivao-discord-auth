@@ -12,6 +12,8 @@ class Consentment
     private $discordId;
     private $nickName;
     private $roles;
+    private $division;
+    private $status;
 
     function __construct($data)
     {
@@ -19,6 +21,8 @@ class Consentment
         $this->discordId = $data['discordId'];
         $this->nickName = $data['nickName'];
         $this->roles = $data['roles'];
+        $this->division = $data['division'];
+        $this->status = $data['status'];
     }
 
     function toRaw() {
@@ -26,7 +30,9 @@ class Consentment
             'userVid' => $this->userVid,
             'discordId' => $this->discordId,
             'nickName' => $this->nickName,
-            'roles' => $this->roles
+            'roles' => $this->roles,
+            'division' => $this->division,
+            'status' => $this->status
         ];
     }
 }

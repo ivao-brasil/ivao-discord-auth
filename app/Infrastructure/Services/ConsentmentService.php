@@ -19,7 +19,7 @@ class ConsentmentService implements ConsentmentServiceContract
 
     public function remove($userVid)
     {
-        // TODO: Implement remove() method.
+        ConsentmentModel::where('userVid', $userVid)->update(['status' => 0]);
     }
 
     public function hasAnotherLinkedAccount($userVid, $discordId)

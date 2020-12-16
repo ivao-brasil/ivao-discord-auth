@@ -75,7 +75,9 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
             'userVid' => $member->getVid(),
             'discordId' => $member->getDiscordId(),
             'nickName' => $member->generateNickname(),
-            'roles' => $roles
+            'roles' => $roles,
+            'status' => true,
+            'division' => $member->getDivision()
         ]);
 
         $this->ConsentmentService->create($consentment);
@@ -87,6 +89,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
             $roles = $this->getRolesToAssign($member);
             $guild = Guild::FromService($this->DiscordGuildService);
             if ($roles->isNotEmpty() && $member->isActive()) {
+                $this->ConsentmentService->remove($member->getVid());
                 if ($this->ConsentmentService->hasAnotherLinkedAccount($member->getVid(), $member->getDiscordId())) {
                     $accounts = $this->ConsentmentService->getAnotherLinkedAccounts($member->getVid(), $member->getDiscordId());
 

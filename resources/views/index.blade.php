@@ -78,8 +78,7 @@
 
                     <p>
                         The undersigned has the right to withdraw this consent at any time
-                        with effect for the future without giving reasons. An e-mail to [e-mail
-                        address] is sufficient for this purpose. The lawfulness of the
+                        with effect for the future without giving reasons. An e-mail to br-hq@ivao.aero is sufficient for this purpose. The lawfulness of the
                         processing carried out on the basis of the consent until the withdrawal
                         is not affected by the withdrawal.
                     </p>
