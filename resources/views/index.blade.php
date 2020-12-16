@@ -133,6 +133,11 @@
                             @lang('text.noAccount')
                             <a href="https://discordapp.com/register" target="_blank">@lang('text.createAccount')</a>
                         </span>
+
+                        <span class="register">
+                            @lang('text.revoke')
+                            <a href="/revoke">@lang('text.revokeAccount')</a>
+                        </span>
                     </div>
                 </div>
             </form>

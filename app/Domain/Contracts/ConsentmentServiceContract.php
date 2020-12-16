@@ -14,4 +14,6 @@ interface ConsentmentServiceContract
     /** @return  Collection */
     public function getAnotherLinkedAccounts($userVid, $discordId);
     public function remove($userVid);
+    /** @return  Collection */
+    public function getActiveAccounts($userVid);
 }

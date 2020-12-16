@@ -14,5 +14,7 @@ return [
     'consentmentDeclaration1' => 'Eu concordo com a declaração de',
     'consentmentDeclaration2' => 'e que o processamento dos meus dados pode ser efetuado da maneira apropriada. Eu li a  ',
     'consent' => 'consentimento',
-    'privacyPolicy' => 'política de privacidade'
+    'privacyPolicy' => 'política de privacidade',
+    'revoke' => 'Quer revogar acesso à sua conta?',
+    'revokeAccount' => 'Clique aqui'
 ];
