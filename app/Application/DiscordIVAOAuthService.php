@@ -53,24 +53,24 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
      * @param $DiscordGuildService
      */
 
-    private function getRolesToAssign(Member $member){
+    private function getRolesToAssign(Member $member)
+    {
         return Roles::FromAPIRequest($this->RolesService)->filter(function (Roles $role) use ($member) {
-            if($role->getSuffix() === 'Member') {
+            if ($role->getSuffix() === 'Member') {
                 return true;
-            }
-            else if($member->isStaff()) {
-                return $member->getStaff()->contains(function($staff) use ($role) {
+            } else if ($member->isStaff()) {
+                return $member->getStaff()->contains(function ($staff) use ($role) {
                     $suffix = Collection::make(explode(':', $role->getSuffix()));
                     return $suffix->contains($staff);
                 });
-            }
-            else {
+            } else {
                 return false;
             }
         });
     }
 
-    private function createConsentment(Member $member, $roles) {
+    private function createConsentment(Member $member, $roles)
+    {
         $consentment = new Consentment([
             'userVid' => $member->getVid(),
             'discordId' => $member->getDiscordId(),
@@ -83,22 +83,32 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
 
     public function validateMember(Member $member)
     {
-        $roles = $this->getRolesToAssign($member);
-        $guild = Guild::FromService($this->DiscordGuildService);
-        if($roles->isNotEmpty() && $member->isActive()) {
-            $member->setRoles($roles);
-            $member->joinGuild($guild, $this->DiscordGuildService);
-            $this->createConsentment($member, $roles->map(function(Roles $role) use ($guild) {
-                return $this->DiscordService->getRolename($guild, $role);
-            })->join(':'));
-        } else {
+        try {
+            $roles = $this->getRolesToAssign($member);
+            $guild = Guild::FromService($this->DiscordGuildService);
+            if ($roles->isNotEmpty() && $member->isActive()) {
+                if ($this->ConsentmentService->hasAnotherLinkedAccount($member->getVid(), $member->getDiscordId())) {
+                    $accounts = $this->ConsentmentService->getAnotherLinkedAccounts($member->getVid(), $member->getDiscordId());
+
+                    foreach ($accounts as $account) {
+
+                        try {
+                            $this->DiscordGuildService->removeFromServer($account['discordId'], $guild);
+                        } catch (\Exception $e) {
+
+                        }
+                    }
+                }
+                $member->setRoles($roles);
+                $member->joinGuild($guild, $this->DiscordGuildService);
+                $this->createConsentment($member, $roles->map(function (Roles $role) use ($guild) {
+                    return $this->DiscordService->getRolename($guild, $role);
+                })->join(':'));
+            } else {
+                throw new InvalidPermissionException();
+            }
+        } catch (\Exception $e) {
             throw new InvalidPermissionException();
         }
-
-        /*try {
-
-        } catch (\Exception $e){
-            throw new InvalidPermissionException();
-        }*/
     }
 }

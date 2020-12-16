@@ -15,4 +15,5 @@ interface GuildServiceContract
     public function getServerRoles(Guild $guild);
     public function getGuildId();
     public function getRolename(Guild $guild, Roles $role);
+    public function removeFromServer($discorId, Guild $guild);
 }

@@ -76,4 +76,12 @@ class DiscordGuildService implements GuildServiceContract
             'guild.id' => (int)$guild->getId()
         ]))->firstWhere('id', $role->getId())->name;
     }
+
+    public function removeFromServer($discordId, Guild $guild)
+    {
+        return $this->discordClient->guild->removeGuildMember([
+            'guild.id' => (int)$guild->getId(),
+            'user.id' => (int)$discordId
+        ]);
+    }
 }

@@ -17,13 +17,19 @@ class ConsentmentService implements ConsentmentServiceContract
         $consentment->save();
     }
 
-    public function hasLinkedAccount($userVid)
-    {
-        // TODO: Implement hasLinkedAccount() method.
-    }
-
     public function remove($userVid)
     {
         // TODO: Implement remove() method.
+    }
+
+    public function hasAnotherLinkedAccount($userVid, $discordId)
+    {
+        $data = $this->getAnotherLinkedAccounts($userVid, $discordId);
+        return sizeof($data) != 0;
+    }
+
+    public function getAnotherLinkedAccounts($userVid, $discordId)
+    {
+        return ConsentmentModel::where('uservid', $userVid)->where('discordId', '!=', $discordId)->get();
     }
 }

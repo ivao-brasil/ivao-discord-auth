@@ -16,7 +16,7 @@ class Consentment extends Migration
         Schema::create('discord-consentment', function (Blueprint $table) {
             $table->id();
             $table->string('userVid', 6);
-            $table->string('discordId', 64)->unique();
+            $table->string('discordId', 64);
             $table->string('nickName');
             $table->string('roles');
             $table->timestamps();
