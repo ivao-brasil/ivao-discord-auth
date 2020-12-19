@@ -21,6 +21,14 @@ class Member
     }
     private $firstName;
     private $division;
+
+    /**
+     * @return mixed
+     */
+    public function getDivision()
+    {
+        return $this->division;
+    }
     /** @var Collection */
 
     private $staff;

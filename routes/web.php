@@ -30,3 +30,4 @@ Route::get('/success',function() {
 Route::get('/api/discord/roles','APIController@getDiscordRoles')->middleware(['auth', 'admin']);
 Route::get('/api/discord/actualRoles','APIController@getActualRoles')->middleware(['auth', 'admin']);
 Route::post('/api/discord/saveRoles','APIController@saveRoles')->middleware(['auth', 'admin']);
+Route::get('/revoke', 'MainController@revoke')->middleware('auth');

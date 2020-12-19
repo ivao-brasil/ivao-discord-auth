@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  web:
+    container_name: ivaobr-discord-web
+    build:
+      context: ./docker/web
+    ports:
+      - 80:80
+    volumes:
+      - ./:/var/www/app
+  db:
+    container_name: ivaobr-discord-db
+    image: mariadb:10.1.26
+    ports:
+      - 3306:3306
+    volumes:
+      - /var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=discord
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=secret
+      - MYSQL_ROOT_PASSWORD=secret
