@@ -96,7 +96,10 @@ class Member
         $this->roles = $roles;
         Log::info([
             'event' => 'assign.roles',
-            'roles' => $roles
+            'user' => $this->vid,
+            'roles' => $roles->map(function($role) {
+				return $role->getSuffix();
+			})->toArray()
         ]);
     }
 
