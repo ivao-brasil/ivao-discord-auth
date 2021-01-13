@@ -108,9 +108,24 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                     return $this->DiscordService->getRolename($guild, $role);
                 })->join(':'));
             } else {
+                if($roles->isEmpty()) {
+                    Log::info([
+                        'event' => 'roles.empty',
+                        'user' => $this->vid,
+                    ]);
+                } else if(!$member->isActive()) {
+                    Log::info([
+                        'event' => 'member.inactive',
+                        'user' => $this->vid,
+                    ]);
+                }
                 throw new InvalidPermissionException();
             }
         } catch (\Exception $e) {
+            Log::info([
+                'event' => 'discord.exception',
+                'user' => $this->vid,
+            ]);
             throw new InvalidPermissionException();
         }
     }
