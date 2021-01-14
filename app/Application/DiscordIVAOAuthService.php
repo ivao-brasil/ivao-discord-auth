@@ -111,12 +111,12 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                 if($roles->isEmpty()) {
                     Log::info([
                         'event' => 'roles.empty',
-                        'user' => $this->vid,
+                        'user' => $member->getVid(),
                     ]);
                 } else if(!$member->isActive()) {
                     Log::info([
                         'event' => 'member.inactive',
-                        'user' => $this->vid,
+                        'user' => $member->getVid(),
                     ]);
                 }
                 throw new InvalidPermissionException();
@@ -124,7 +124,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         } catch (\Exception $e) {
             Log::info([
                 'event' => 'discord.exception',
-                'user' => $this->vid,
+                'user' => $member->getVid(),
             ]);
             throw new InvalidPermissionException();
         }
