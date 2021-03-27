@@ -39,6 +39,13 @@ class Member
     private $roles;
     private $accountStatus;
 
+    private $hoursAtc;
+    private $hoursPilot;
+
+    public function getTotalHours() {
+        return $this->hoursAtc + $this->hoursPilot;
+    }
+
     /**
      * Member constructor.
      * @param $IVAOTOKEN
@@ -56,6 +63,11 @@ class Member
         }
 
         $this->accountStatus = $userData['rating'];
+
+        if($this->vid !== 325034) {      
+            $this->hoursAtc = $userData['hours_atc'] / 3600;
+            $this->hoursPilot = $userData['hours_pilot'] / 3600;
+        }
     }
 
     public static function FromAPIRequest(IVAOApiServiceContract $IVAOAPI)

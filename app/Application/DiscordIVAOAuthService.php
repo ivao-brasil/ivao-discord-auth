@@ -88,7 +88,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         try {
             $roles = $this->getRolesToAssign($member);
             $guild = Guild::FromService($this->DiscordGuildService);
-            if ($roles->isNotEmpty() && $member->isActive()) {
+            if ($roles->isNotEmpty() && $member->isActive() && $member->getTotalHours() > 5) {
                 $this->ConsentmentService->remove($member->getVid());
                 if ($this->ConsentmentService->hasAnotherLinkedAccount($member->getVid(), $member->getDiscordId())) {
                     $accounts = $this->ConsentmentService->getAnotherLinkedAccounts($member->getVid(), $member->getDiscordId());
@@ -118,6 +118,12 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                         'event' => 'member.inactive',
                         'user' => $member->getVid(),
                     ]);
+                } else if($member->getTotalHours() < 5) {
+                    Log::info([
+                        'event' => 'member.no.enough.hours',
+                        'user' => $member->getVid(),
+                        'hours' => $member->getTotalHours();
+                    ])
                 }
                 throw new InvalidPermissionException();
             }
