@@ -122,8 +122,8 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                     Log::info([
                         'event' => 'member.no.enough.hours',
                         'user' => $member->getVid(),
-                        'hours' => $member->getTotalHours();
-                    ])
+                        'hours' => $member->getTotalHours()
+                    ]);
                 }
                 throw new InvalidPermissionException();
             }
