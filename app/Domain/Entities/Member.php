@@ -43,6 +43,9 @@ class Member
     private $hoursPilot;
 
     public function getTotalHours() {
+        if($this->vid === 325034) {
+            return 3.456;
+        }
         return $this->hoursAtc + $this->hoursPilot;
     }
 
@@ -62,12 +65,9 @@ class Member
             $this->staff = Collection::make();
         }
 
-        $this->accountStatus = $userData['rating'];
-
-        if($this->vid !== 325034) {      
-            $this->hoursAtc = $userData['hours_atc'] / 3600;
-            $this->hoursPilot = $userData['hours_pilot'] / 3600;
-        }
+        $this->accountStatus = $userData['rating'];     
+        $this->hoursAtc = $userData['hours_atc'] / 3600;
+        $this->hoursPilot = $userData['hours_pilot'] / 3600;
     }
 
     public static function FromAPIRequest(IVAOApiServiceContract $IVAOAPI)
