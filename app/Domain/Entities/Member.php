@@ -43,9 +43,6 @@ class Member
     private $hoursPilot;
 
     public function getTotalHours() {
-        if($this->vid === 325034) {
-            return 3.456;
-        }
         return $this->hoursAtc + $this->hoursPilot;
     }
 
