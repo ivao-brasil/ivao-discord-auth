@@ -62,7 +62,7 @@ class Member
             $this->staff = Collection::make();
         }
 
-        $this->accountStatus = $userData['rating'];     
+        $this->accountStatus = $userData['rating'];
         $this->hoursAtc = $userData['hours_atc'] / 3600;
         $this->hoursPilot = $userData['hours_pilot'] / 3600;
     }
@@ -149,7 +149,7 @@ class Member
         $guildService->addMember($this, $guild);
         Log::info([
             'event' => 'join.server',
-            'user' => $this->vid
+            'user' => $this->generateNickname()
         ]);
     }
 

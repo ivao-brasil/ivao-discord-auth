@@ -111,17 +111,17 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                 if($roles->isEmpty()) {
                     Log::info([
                         'event' => 'roles.empty',
-                        'user' => $member->getVid(),
+                        'user' => $member->generateNickname(),
                     ]);
                 } else if(!$member->isActive()) {
                     Log::info([
                         'event' => 'member.inactive',
-                        'user' => $member->getVid(),
+                        'user' => $member->generateNickname(),
                     ]);
                 } else if($member->getTotalHours() < 5) {
                     Log::info([
                         'event' => 'member.no.enough.hours',
-                        'user' => $member->getVid(),
+                        'user' => $member->generateNickname(),
                         'hours' => $member->getTotalHours()
                     ]);
                 }
@@ -130,7 +130,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         } catch (\Exception $e) {
             Log::info([
                 'event' => 'discord.exception',
-                'user' => $member->getVid(),
+                'user' => $member->generateNickname(),
             ]);
             throw new InvalidPermissionException();
         }
