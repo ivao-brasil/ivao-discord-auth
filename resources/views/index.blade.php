@@ -108,7 +108,7 @@
         <div class="logoContainer"><img class="logo"
                                         src="https://seeklogo.com/images/D/discord-logo-134E148657-seeklogo.com.png"/><img
                 class="text"
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Discord_Color_Text_Logo.svg/2000px-Discord_Color_Text_Logo.svg.png"/>
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Discord_White_Text_Logo_%282015-2021%29.svg/2560px-Discord_White_Text_Logo_%282015-2021%29.svg.png"/>
         </div>
         <div class="acceptContainer">
             <form>
