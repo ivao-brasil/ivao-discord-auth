@@ -98,7 +98,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                         try {
                             $this->DiscordGuildService->removeFromServer($account['discordId'], $guild);
                         } catch (\Exception $e) {
-
+                            // NOOP
                         }
                     }
                 }
@@ -128,10 +128,11 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                 throw new InvalidPermissionException();
             }
         } catch (\Exception $e) {
-            Log::info([
+            Log::critical($e, [
                 'event' => 'discord.exception',
-                'user' => $member->generateNickname(),
+                'user' => $member->generateNickname()
             ]);
+
             throw new InvalidPermissionException();
         }
     }
