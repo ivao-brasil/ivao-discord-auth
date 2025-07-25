@@ -6,8 +6,38 @@
 .env
 .env.backup
 .phpunit.result.cache
+docker-compose.override.yml
 Homestead.json
 Homestead.yaml
 npm-debug.log
-yarn-error.log
-.idea
+yarn-debug.log*
+yarn-error.log*
+
+# Laravel Mix
+/public/css
+/public/js
+/public/mix-manifest.json
+
+# IDEs and editors
+/.idea
+/.vscode
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+*.launch
+.settings/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
