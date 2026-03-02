@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\Log;
 
 class Member
 {
+    // IVAO Account Status Constants
+    const STATUS_SUSPENDED = 0;
+    const STATUS_INACTIVE = 1;
+    const STATUS_ACTIVE = 2;
+    const STATUS_ACTIVE_11 = 11;
+    const STATUS_ACTIVE_12 = 12;
+
     private $vid;
 
     /**
@@ -168,7 +175,58 @@ class Member
         return $this->staff->isNotEmpty();
     }
 
+    /**
+     * Check if account is active
+     * @return bool
+     */
     public function isActive() {
-        return in_array($this->accountStatus, array(2, 11,12));
+        return in_array($this->accountStatus, [
+            self::STATUS_ACTIVE,
+            self::STATUS_ACTIVE_11,
+            self::STATUS_ACTIVE_12
+        ]);
+    }
+
+    /**
+     * Check if account is suspended
+     * @return bool
+     */
+    public function isSuspended() {
+        return $this->accountStatus === self::STATUS_SUSPENDED;
+    }
+
+    /**
+     * Check if account is inactive
+     * @return bool
+     */
+    public function isInactive() {
+        return $this->accountStatus === self::STATUS_INACTIVE;
+    }
+
+    /**
+     * Get the account status code
+     * @return mixed
+     */
+    public function getAccountStatus()
+    {
+        return $this->accountStatus;
+    }
+
+    /**
+     * Get human-readable account status
+     * @return string
+     */
+    public function getAccountStatusReason(): string
+    {
+        if ($this->isSuspended()) {
+            return 'suspended';
+        }
+        if ($this->isInactive()) {
+            return 'inactive';
+        }
+        if (!$this->isActive()) {
+            return 'not_active';
+        }
+        return 'active';
     }
 }
