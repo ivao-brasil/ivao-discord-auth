@@ -4,8 +4,10 @@
 namespace App\Domain\Contracts;
 
 
+use App\ConsentmentModel;
 use App\Domain\Entities\Consentment;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 
 interface ConsentmentServiceContract
 {
@@ -16,4 +18,11 @@ interface ConsentmentServiceContract
     public function remove($userVid);
     /** @return  Collection */
     public function getActiveAccounts($userVid);
+
+    public function findActiveByDiscordId(string $discordId): ?ConsentmentModel;
+
+    /** @return LazyCollection<int, ConsentmentModel> */
+    public function allActive(): LazyCollection;
+
+    public function updateSynced(ConsentmentModel $account, string $nickname, string $roles): void;
 }

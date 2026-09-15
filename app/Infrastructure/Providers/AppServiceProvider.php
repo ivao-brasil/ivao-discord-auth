@@ -7,10 +7,12 @@ use App\Application\DiscordIVAOAuthService;
 use App\Domain\Contracts\ConsentmentServiceContract;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Contracts\IVAOApiServiceContract;
+use App\Domain\Contracts\IVAOUserDirectoryContract;
 use App\Domain\Contracts\RolesServiceContract;
 use App\Infrastructure\Services\ConsentmentService;
 use App\Infrastructure\Services\DiscordGuildService;
 use App\Infrastructure\Services\IVAOApiService;
+use App\Infrastructure\Services\IVAOUserDirectory;
 use App\Infrastructure\Services\RolesService;
 use App\Infrastructure\Socialite\IVAOProvider;
 use Illuminate\Support\Facades\Event;
@@ -30,13 +32,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(GuildServiceContract::class, function () {
             return new DiscordGuildService(
                 config('services.discord.bot_token'),
-                config('services.discord.guild_id')
+                config('services.discord.guild_id'),
+                config('services.discord.client_id')
             );
         });
 
         $this->app->bind(RolesServiceContract::class, RolesService::class);
 
         $this->app->bind(ConsentmentServiceContract::class, ConsentmentService::class);
+
+        $this->app->bind(IVAOUserDirectoryContract::class, IVAOUserDirectory::class);
     }
 
     public function boot(): void

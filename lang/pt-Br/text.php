@@ -22,5 +22,17 @@ return [
     'revokeConfirmTitle' => 'Revogar acesso',
     'revokeConfirmBody' => 'Suas contas do Discord vinculadas a este VID serão removidas do servidor. Você pode entrar novamente quando quiser.',
     'revokeConfirmButton' => 'Revogar acesso',
-    'cancel' => 'Cancelar'
+    'cancel' => 'Cancelar',
+    'syncCommandDescription' => 'Atualiza seus cargos e apelido com os dados da sua conta IVAO',
+    'syncNotLinked' => 'Sua conta do Discord ainda não está vinculada. Entre por :url para vincular.',
+    'syncCooldown' => 'Você sincronizou há pouco. Tente novamente em :minutes minutos.',
+    'syncAway' => 'Você não está no servidor. Entre por :url para voltar.',
+    'syncUpToDate' => 'Seus cargos e apelido já estão atualizados.',
+    'syncUpdated' => 'Pronto, sua conta foi atualizada.',
+    'syncRolesAdded' => 'Cargos adicionados: :roles',
+    'syncRolesRemoved' => 'Cargos removidos: :roles',
+    'syncNickname' => 'Novo apelido: :nickname',
+    'syncSkipped' => 'Algumas alterações não foram feitas porque seu cargo está acima do bot.',
+    'syncFailed' => 'Não foi possível sincronizar agora. Tente novamente mais tarde.',
+    'syncUnknownCommand' => 'Comando desconhecido.'
 ];

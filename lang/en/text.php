@@ -22,5 +22,17 @@ return [
     'revokeConfirmTitle' => 'Revoke access',
     'revokeConfirmBody' => 'Your Discord accounts linked to this VID will be removed from the server. You can join again at any time.',
     'revokeConfirmButton' => 'Revoke access',
-    'cancel' => 'Cancel'
+    'cancel' => 'Cancel',
+    'syncCommandDescription' => 'Update your roles and nickname from your IVAO account',
+    'syncNotLinked' => 'Your Discord account is not linked yet. Visit :url to link it.',
+    'syncCooldown' => 'You synced a moment ago. Try again in :minutes minutes.',
+    'syncAway' => 'You are not in the server. Visit :url to join again.',
+    'syncUpToDate' => 'Your roles and nickname are already up to date.',
+    'syncUpdated' => 'Done, your account was updated.',
+    'syncRolesAdded' => 'Roles added: :roles',
+    'syncRolesRemoved' => 'Roles removed: :roles',
+    'syncNickname' => 'New nickname: :nickname',
+    'syncSkipped' => 'Some changes were not made because your role is above the bot.',
+    'syncFailed' => 'Could not sync right now. Please try again later.',
+    'syncUnknownCommand' => 'Unknown command.'
 ];

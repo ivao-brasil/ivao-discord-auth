@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Behind Cloudflare, so URLs are generated as https
         $middleware->trustProxies(at: '*');
 
+        // Discord signs interaction requests instead of sending a CSRF token
+        $middleware->validateCsrfTokens(except: ['discord/interactions']);
+
         $middleware->alias([
             'auth' => Authenticate::class,
             'admin' => Admin::class,
