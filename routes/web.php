@@ -21,4 +21,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/api/discord/saveRoles', [APIController::class, 'saveRoles']);
 });
 
-Route::get('/revoke', [MainController::class, 'revoke'])->middleware('auth');
+Route::middleware('auth')->group(function () {
+    Route::view('/revoke', 'revoke')->name('revoke');
+    Route::post('/revoke', [MainController::class, 'revoke']);
+});

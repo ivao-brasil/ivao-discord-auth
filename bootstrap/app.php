@@ -1,5 +1,8 @@
 <?php
 
+use App\Exceptions\InactiveAccountException;
+use App\Exceptions\InvalidIVAOTokenException;
+use App\Exceptions\InvalidPermissionException;
 use App\Infrastructure\Http\Middleware\Admin;
 use App\Infrastructure\Http\Middleware\Authenticate;
 use Illuminate\Foundation\Application;
@@ -21,4 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => Admin::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {})->create();
+    ->withExceptions(function (Exceptions $exceptions): void {
+        // Expected refusals shown to the member; the cause is logged where it happens
+        $exceptions->dontReport([
+            InactiveAccountException::class,
+            InvalidIVAOTokenException::class,
+            InvalidPermissionException::class,
+        ]);
+    })->create();

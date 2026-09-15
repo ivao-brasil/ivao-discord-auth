@@ -7,6 +7,7 @@ use App\Exceptions\InvalidIVAOTokenException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class IVAOController extends Controller
 {
@@ -30,6 +31,10 @@ class IVAOController extends Controller
 
         try {
             $user = Socialite::driver('ivao')->user();
+        } catch (InvalidStateException $e) {
+            // Expired or reused login link
+            Log::info('IVAO SSO state mismatch', ['event' => 'ivao.sso.invalid_state']);
+            throw new InvalidIVAOTokenException();
         } catch (\Exception $e) {
             Log::warning(get_class($e).': '.$e->getMessage(), ['event' => 'ivao.sso.failed']);
             throw new InvalidIVAOTokenException();

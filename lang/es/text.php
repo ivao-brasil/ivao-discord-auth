@@ -18,5 +18,9 @@ return [
     'revoke' => '¿Quieres revocar el acceso a tu cuenta?',
     'revokeAccount' => 'Click aqui',
     'accountSuspendedException' => 'Tu cuenta de IVAO está suspendida',
-    'accountInactiveException' => 'Tu cuenta de IVAO está inactiva'
+    'accountInactiveException' => 'Tu cuenta de IVAO está inactiva',
+    'revokeConfirmTitle' => 'Revocar acceso',
+    'revokeConfirmBody' => 'Tus cuentas de Discord vinculadas a este VID serán eliminadas del servidor. Puedes volver a ingresar cuando quieras.',
+    'revokeConfirmButton' => 'Revocar acceso',
+    'cancel' => 'Cancelar'
 ];
