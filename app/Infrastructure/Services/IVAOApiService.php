@@ -30,7 +30,7 @@ class IVAOApiService implements IVAOApiServiceContract
                 $user['hours'] ?? []
             ),
             'userStaffPositions' => array_map(
-                fn ($position) => Arr::only($position, ['id']),
+                fn ($position) => Arr::only($position, ['id', 'connectAs']),
                 $user['userStaffPositions'] ?? []
             ),
         ]);
