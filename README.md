@@ -67,15 +67,33 @@ For local testing, register `http://localhost:8000/ivao/callback` and `http://lo
 
 ## Using
 
-1. First add the bot to your server (you can use this [permission calculator](https://discordapi.com/permissions.html) to generate the URL (it requires the **CLIENT_ID**))
-2. On your discord server set the role that the bot created above all the roles that you can set to all the users (if this step is not done it can cause that the bot cannot set the roles when the user tries to join the server)
-3. You need to visit the /admin endpoint with account registered as admin according step 3 of installation procedure.
-4. Automatically, the system will get all roles available at your server. You can create a new rule by clicking at add button and select the role, at suffix you can use two different options:
+1. Add the bot to your server (you can use this [permission calculator](https://discordapi.com/permissions.html) to generate the URL; it requires the **CLIENT_ID**). The bot needs **Manage Roles**, **Manage Nicknames** and **Create Instant Invite**.
+2. In the server settings, place the bot role above every role it should hand out. The bot cannot change members ranked above its own role; those members still join, but their roles and nickname are left as they are.
+3. Open `/admin` with a VID listed in `ADMIN_VIDS`.
+4. Under **Rules**, create a rule for each group of members and choose the Discord roles it gives. A rule can combine:
+   - staff positions (e.g. `BR-WM`, `BR-AWM`, or HQ positions such as `WD6`), with or without trial positions;
+   - division (any, only or except the listed divisions);
+   - minimum ATC and pilot ratings and minimum hours;
+   - GCA and virtual airline ownership.
 
-   - Set the staff positions that will receive the roles, separated by "**:**". For example: `BR-WM:BR-AWM`;
+   A rule without conditions applies to every member who can join. Roles with administrator permission cannot be used, and roles that are not in any rule are never changed.
+5. Under **Members**, search linked accounts, see what the next sync would change, sync a member immediately or remove them from the server.
 
-   - Set `Member` for the users that don't comply with other requirements, if you want to restrict the server just for staffs, just don't create a rule with this suffix.
-5. Once that you have seted all rules for roles assignment, just access the root path of application and enjoy it.
+### Automatic sync
+
+`php artisan discord:sync` updates the roles and nicknames of every linked member from their IVAO data, adding and removing only the roles controlled by the rules. Members whose IVAO account is suspended, inactive or deleted lose those roles. Nothing is removed when IVAO or Discord cannot be reached.
+
+The command is scheduled daily at `SYNC_TIME` (default `04:00`, `America/Sao_Paulo`). In Plesk, add a **Scheduled Task** that runs `php artisan schedule:run` every minute (or runs `php artisan discord:sync` once a day) with the site PHP version. `php artisan discord:sync 123456` syncs a single VID.
+
+### /sync command
+
+Members can refresh their own roles with `/sync` in Discord.
+
+1. Set `DISCORD_PUBLIC_KEY` to the **Public Key** from the Discord Developer Portal (General Information) and deploy.
+2. In the same page, set **Interactions Endpoint URL** to `APP_URL/discord/interactions`. Discord checks the endpoint when you save.
+3. Run `php artisan discord:register-commands` once.
+
+The command replies after the response is sent to Discord, which works best with PHP running as **FPM** in Plesk.
 
 ## Language
 

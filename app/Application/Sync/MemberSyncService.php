@@ -21,31 +21,34 @@ class MemberSyncService
     private $guildService;
     private $consentments;
     private $resolver;
+    private $statuses;
 
     public function __construct(
         IVAOUserDirectoryContract $directory,
         GuildServiceContract $guildService,
         ConsentmentServiceContract $consentments,
-        RoleResolver $resolver
+        RoleResolver $resolver,
+        SyncStatusStore $statuses
     ) {
         $this->directory = $directory;
         $this->guildService = $guildService;
         $this->consentments = $consentments;
         $this->resolver = $resolver;
+        $this->statuses = $statuses;
     }
 
     /**
-     * Brings the member's managed roles and nickname in line with their current IVAO data.
+     * Works out the changes that bring the member in line with their current IVAO data, without applying them.
      *
-     * @throws \Illuminate\Http\Client\RequestException when IVAO or Discord cannot be reached; nothing is removed in that case
+     * @throws \Illuminate\Http\Client\RequestException when IVAO or Discord cannot be reached
      */
-    public function sync(ConsentmentModel $account): SyncResult
+    public function plan(ConsentmentModel $account): SyncPlan
     {
         $guild = Guild::FromService($this->guildService);
         $discordMember = $this->guildService->getMember($account->discordId, $guild);
 
         if ($discordMember === null) {
-            return SyncResult::away();
+            return SyncPlan::away();
         }
 
         $user = $this->directory->find($account->userVid);
@@ -54,31 +57,34 @@ class MemberSyncService
 
         $desired = $eligible ? $this->resolver->rolesFor($member) : Collection::make();
         $current = Collection::make($discordMember['roles'] ?? []);
+        $nickname = $eligible ? $member->generateNickname() : null;
 
-        $added = [];
-        $removed = [];
-        $skipped = false;
+        return new SyncPlan(
+            $discordMember,
+            $member,
+            $eligible,
+            $desired->diff($current)->values()->all(),
+            $current->intersect($this->resolver->managedRoles())->diff($desired)->values()->all(),
+            $nickname !== null && $nickname !== ($discordMember['nick'] ?? null) ? $nickname : null,
+        );
+    }
 
-        foreach ($desired->diff($current) as $roleId) {
-            $this->guildService->addRole($account->discordId, $roleId, $guild) ? $added[] = $roleId : $skipped = true;
+    /**
+     * Applies the planned changes. Nothing is removed when IVAO or Discord cannot be reached.
+     *
+     * @throws \Illuminate\Http\Client\RequestException
+     */
+    public function sync(ConsentmentModel $account): SyncResult
+    {
+        try {
+            $result = $this->apply($account, $this->plan($account));
+        } catch (\Throwable $e) {
+            $this->statuses->put($account->id, SyncStatusStore::FAILED);
+
+            throw $e;
         }
 
-        foreach ($current->intersect($this->resolver->managedRoles())->diff($desired) as $roleId) {
-            $this->guildService->removeRole($account->discordId, $roleId, $guild) ? $removed[] = $roleId : $skipped = true;
-        }
-
-        $nickname = null;
-        if ($eligible && ($discordMember['nick'] ?? null) !== $member->generateNickname()) {
-            $this->guildService->setNickname($account->discordId, $member->generateNickname(), $guild)
-                ? $nickname = $member->generateNickname()
-                : $skipped = true;
-        }
-
-        $result = new SyncResult(SyncResult::SYNCED, $added, $removed, $nickname, $skipped);
-
-        if ($result->hasChanges()) {
-            $this->recordChanges($account, $result, $current, $guild);
-        }
+        $this->statuses->put($account->id, SyncStatusStore::forResult($result));
 
         return $result;
     }
@@ -91,16 +97,19 @@ class MemberSyncService
     public function syncAll(?callable $progress = null): array
     {
         $summary = ['checked' => 0, 'updated' => 0, 'away' => 0, 'failed' => 0];
+        $statuses = [];
 
         foreach ($this->consentments->allActive() as $account) {
             $summary['checked']++;
 
             try {
-                $result = $this->sync($account);
+                $result = $this->apply($account, $this->plan($account));
+                $statuses[$account->id] = SyncStatusStore::forResult($result);
                 $summary['updated'] += $result->hasChanges() ? 1 : 0;
                 $summary['away'] += $result->status === SyncResult::AWAY ? 1 : 0;
                 $progress && $progress($account, $result, null);
             } catch (\Throwable $e) {
+                $statuses[$account->id] = SyncStatusStore::FAILED;
                 $summary['failed']++;
                 Log::warning($e->getMessage(), ['event' => 'sync.failed', 'vid' => $account->userVid]);
                 $progress && $progress($account, null, $e);
@@ -109,10 +118,46 @@ class MemberSyncService
             usleep((int) config('brauth.sync.delay_ms') * 1000);
         }
 
+        $this->statuses->replace($statuses);
         Cache::forever(self::LAST_RUN_CACHE_KEY, $summary + ['finishedAt' => now()->toIso8601String()]);
         Log::notice('Discord sync finished', ['event' => 'sync.finished'] + $summary);
 
         return $summary;
+    }
+
+    private function apply(ConsentmentModel $account, SyncPlan $plan): SyncResult
+    {
+        if ($plan->isAway()) {
+            return SyncResult::away();
+        }
+
+        $guild = Guild::FromService($this->guildService);
+        $added = [];
+        $removed = [];
+        $skipped = false;
+
+        foreach ($plan->add as $roleId) {
+            $this->guildService->addRole($account->discordId, $roleId, $guild) ? $added[] = $roleId : $skipped = true;
+        }
+
+        foreach ($plan->remove as $roleId) {
+            $this->guildService->removeRole($account->discordId, $roleId, $guild) ? $removed[] = $roleId : $skipped = true;
+        }
+
+        $nickname = null;
+        if ($plan->nickname !== null) {
+            $this->guildService->setNickname($account->discordId, $plan->nickname, $guild)
+                ? $nickname = $plan->nickname
+                : $skipped = true;
+        }
+
+        $result = new SyncResult(SyncResult::SYNCED, $added, $removed, $nickname, $skipped);
+
+        if ($result->hasChanges()) {
+            $this->recordChanges($account, $result, Collection::make($plan->discordMember['roles'] ?? []), $guild);
+        }
+
+        return $result;
     }
 
     private function recordChanges(ConsentmentModel $account, SyncResult $result, Collection $current, Guild $guild): void

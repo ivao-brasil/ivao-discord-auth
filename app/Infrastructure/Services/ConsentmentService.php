@@ -52,6 +52,11 @@ class ConsentmentService implements ConsentmentServiceContract
         return ConsentmentModel::where('status', true)->lazyById();
     }
 
+    public function deactivate(ConsentmentModel $account): void
+    {
+        $account->update(['status' => false]);
+    }
+
     public function updateSynced(ConsentmentModel $account, string $nickname, string $roles): void
     {
         $account->update([

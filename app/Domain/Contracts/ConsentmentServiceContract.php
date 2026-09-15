@@ -24,5 +24,7 @@ interface ConsentmentServiceContract
     /** @return LazyCollection<int, ConsentmentModel> */
     public function allActive(): LazyCollection;
 
+    public function deactivate(ConsentmentModel $account): void;
+
     public function updateSynced(ConsentmentModel $account, string $nickname, string $roles): void;
 }

@@ -7,6 +7,6 @@ use Exception;
 class InvalidPermissionException extends Exception
 {
     public function render($request){
-        return view('houston', ['text' => __('text.invalidPermissionException')]);
+        return view('houston', ['text' => __('text.invalidPermissionException'), 'image' => true]);
     }
 }
