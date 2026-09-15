@@ -7,25 +7,25 @@ use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Entities\Guild;
 use App\Domain\Entities\Member;
 use App\Domain\Entities\Roles;
-use Illuminate\Support\Facades\Log;
-use RestCord\DiscordClient;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
-use RestCord\Model\Guild\Role;
+use Illuminate\Support\Facades\Http;
 
 class DiscordGuildService implements GuildServiceContract
 {
-    private $discordClient;
-    private $guildId;
+    private const API_URL = 'https://discord.com/api/v10';
 
-    public function __construct(DiscordClient $discordClient, $guildId)
+    private $botToken;
+    private $guildId;
+    private $serverRoles;
+
+    public function __construct($botToken, $guildId)
     {
-        $this->discordClient = $discordClient;
+        $this->botToken = $botToken;
         $this->guildId = $guildId;
     }
 
-    /**
-     * @return mixed
-     */
     public function getGuildId()
     {
         return $this->guildId;
@@ -33,10 +33,8 @@ class DiscordGuildService implements GuildServiceContract
 
     public function addMember(Member $member, Guild $guild)
     {
-        $this->discordClient->guild->addGuildMember([
-            'guild.id' => (int)$guild->getId(),
-            'user.id' => (int)$member->getDiscordId(),
-            'access_token' => $member->getDiscordAccessToken()
+        $this->discord()->put("/guilds/{$guild->getId()}/members/{$member->getDiscordId()}", [
+            'access_token' => $member->getDiscordAccessToken(),
         ]);
 
         $member->getRoles()->each(function ($role) use ($member, $guild) {
@@ -48,40 +46,53 @@ class DiscordGuildService implements GuildServiceContract
 
     private function addRoleToMember(Member $member, Roles $role, Guild $guild)
     {
-        $this->discordClient->guild->addGuildMemberRole([
-            'guild.id' => (int)$guild->getId(),
-            'user.id' => (int)$member->getDiscordId(),
-            'role.id' => $role->getId()
-        ]);
+        $this->discord()->put("/guilds/{$guild->getId()}/members/{$member->getDiscordId()}/roles/{$role->getId()}");
     }
 
     private function changeMemberNickname(Member $member, Guild $guild)
     {
-        $this->discordClient->guild->modifyGuildMember([
-            'guild.id' => (int)$guild->getId(),
-            'user.id' => (int)$member->getDiscordId(),
-            'nick' => $member->generateNickname()
+        $this->discord()->patch("/guilds/{$guild->getId()}/members/{$member->getDiscordId()}", [
+            'nick' => $member->generateNickname(),
         ]);
     }
 
     public function getServerRoles(Guild $guild)
     {
-        return $this->discordClient->guild->getGuildRoles([
-            'guild.id' => (int)$guild->getId()
-        ]);
+        return $this->serverRoles ??= $this->discord()->get("/guilds/{$guild->getId()}/roles")->json();
     }
 
-    public function getRolename(Guild $guild, Roles $role) {
-        return Collection::make($this->discordClient->guild->getGuildRoles([
-            'guild.id' => (int)$guild->getId()
-        ]))->firstWhere('id', $role->getId())->name;
+    public function getRolename(Guild $guild, Roles $role)
+    {
+        return Collection::make($this->getServerRoles($guild))->firstWhere('id', (string) $role->getId())['name'] ?? null;
     }
 
     public function removeFromServer($discordId, Guild $guild)
     {
-        return $this->discordClient->guild->removeGuildMember([
-            'guild.id' => (int)$guild->getId(),
-            'user.id' => (int)$discordId
-        ]);
+        try {
+            return $this->discord()->delete("/guilds/{$guild->getId()}/members/{$discordId}");
+        } catch (RequestException $e) {
+            // Member already left the server
+            if ($e->response->status() === 404) {
+                return null;
+            }
+
+            throw $e;
+        }
+    }
+
+    private function discord(): PendingRequest
+    {
+        return Http::baseUrl(self::API_URL)
+            ->withToken($this->botToken, 'Bot')
+            ->acceptJson()
+            // Retry once on rate limit, waiting Discord's retry_after
+            ->retry(2, function (int $attempt, \Exception $e) {
+                return $e instanceof RequestException
+                    ? (int) ceil(($e->response->json('retry_after') ?? 1) * 1000)
+                    : 1000;
+            }, function (\Exception $e) {
+                return $e instanceof RequestException && $e->response->status() === 429;
+            })
+            ->throw();
     }
 }

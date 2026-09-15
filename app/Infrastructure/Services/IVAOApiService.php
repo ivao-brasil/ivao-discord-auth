@@ -4,45 +4,35 @@
 namespace App\Infrastructure\Services;
 
 
-use App\Core\Constants;
 use App\Domain\Contracts\IVAOApiServiceContract;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Arr;
 
 class IVAOApiService implements IVAOApiServiceContract
 {
-    private const ENDPOINT = Constants::IVAO_API_URL;
-    private $IVAOTOKEN;
-    private $data;
-    private $httpClient;
+    private const SESSION_KEY = 'IVAO_USER';
 
-    /**
-     * IVAOApiService constructor.
-     * @param $IVAOTOKEN
-     */
-
-    public function __construct(Http $httpClient)
+    public function getUserData(): ?array
     {
-        $this->httpClient = $httpClient;
+        return request()->session()->get(self::SESSION_KEY);
     }
 
-    public function getUserData()
+    public function storeUserData(array $user): void
     {
-        if ($this->data) {
-            return $this->data;
-        }
-        $response = $this->httpClient::get(self::ENDPOINT, ['token' => $this->getIVAOTOKEN(), 'type' => 'json']);
-        return $this->data = $response->json();
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getIVAOTOKEN()
-    {
-        if ($this->IVAOTOKEN) {
-            return $this->IVAOTOKEN;
-        } else {
-            return request()->session()->get('IVAOTOKEN');
-        }
+        // Cookie sessions are limited to 4KB, so keep only the fields the app uses
+        request()->session()->put(self::SESSION_KEY, [
+            'id' => $user['id'],
+            'firstName' => $user['firstName'] ?? '',
+            'lastName' => $user['lastName'] ?? '',
+            'divisionId' => $user['divisionId'] ?? null,
+            'rating' => ['networkRating' => ['id' => Arr::get($user, 'rating.networkRating.id')]],
+            'hours' => array_map(
+                fn ($hours) => Arr::only($hours, ['type', 'hours']),
+                $user['hours'] ?? []
+            ),
+            'userStaffPositions' => array_map(
+                fn ($position) => Arr::only($position, ['id']),
+                $user['userStaffPositions'] ?? []
+            ),
+        ]);
     }
 }

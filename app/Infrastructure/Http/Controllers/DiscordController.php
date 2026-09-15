@@ -5,18 +5,15 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Application\Contracts\DiscordIVAOAuthServiceInterface;
 use App\Domain\Contracts\IVAOApiServiceContract;
 use App\Domain\Entities\Member;
+use App\Exceptions\InvalidPermissionException;
 use Illuminate\Http\Request;
-use Socialite;
+use Laravel\Socialite\Facades\Socialite;
 
 class DiscordController extends Controller
 {
     private $discordIVAOAuth;
     private $IVAOAPI;
 
-    /**
-     * DiscordController constructor.
-     * @param $discordIVAOAuth
-     */
     public function __construct(DiscordIVAOAuthServiceInterface $discordIVAOAuth, IVAOApiServiceContract $IVAOAPI)
     {
         $this->discordIVAOAuth = $discordIVAOAuth;
@@ -24,12 +21,16 @@ class DiscordController extends Controller
     }
 
     public function login(Request $request){
-        return Socialite::with('discord')->scopes(['guilds.join'])->redirect();
+        return Socialite::driver('discord')->scopes(['guilds.join'])->redirect();
     }
 
     public function loginCallback(Request $request){
-        $user = Socialite::driver('discord')->user();
-        $request->session()->put('DISCORD_TOKEN', $user->token);
+        try {
+            $user = Socialite::driver('discord')->user();
+        } catch (\Exception $e) {
+            throw new InvalidPermissionException();
+        }
+
         $member = Member::FromAPIRequest($this->IVAOAPI);
         $member->setDiscordAccessToken($user->token);
         $member->setDiscordId($user->id);

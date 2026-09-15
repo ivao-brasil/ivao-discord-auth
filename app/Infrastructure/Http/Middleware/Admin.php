@@ -5,35 +5,23 @@ namespace App\Infrastructure\Http\Middleware;
 use App\Domain\Contracts\IVAOApiServiceContract;
 use Closure;
 
-
 class Admin
 {
     private $IVAOAPI;
 
-    /**
-     * Admin constructor.
-     * @param $IVAOAPI
-     */
     public function __construct(IVAOApiServiceContract $IVAOAPI)
     {
         $this->IVAOAPI = $IVAOAPI;
     }
 
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
     public function handle($request, Closure $next)
     {
-        $vids = explode(":", env('ADMIN_VIDS'));
         $memberData = $this->IVAOAPI->getUserData();
-        if(in_array($memberData['vid'], $vids)) {
+
+        if (in_array((string) $memberData['id'], config('brauth.admin_vids'), true)) {
             return $next($request);
-        } else {
-            return redirect()->route('home');
         }
+
+        return redirect()->route('home');
     }
 }

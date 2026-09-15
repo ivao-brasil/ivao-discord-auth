@@ -16,10 +16,6 @@ class MainController extends Controller
     private $consentmentService;
     private $guildService;
 
-    /**
-     * MainController constructor.
-     * @param $IVAOAPI
-     */
     public function __construct(IVAOApiServiceContract $IVAOAPI, ConsentmentService $consentmentService, GuildServiceContract $guildService)
     {
         $this->IVAOAPI = $IVAOAPI;
@@ -27,11 +23,6 @@ class MainController extends Controller
         $this->guildService = $guildService;
     }
 
-    /**
-     * Validate member account status
-     * @param Member $member
-     * @throws InactiveAccountException
-     */
     private function validateAccountStatus(Member $member): void
     {
         if ($member->isSuspended()) {
@@ -50,7 +41,6 @@ class MainController extends Controller
     public function showIndex(Request $request) {
         $member = Member::FromAPIRequest($this->IVAOAPI);
         
-        // Validate account status before showing the index page
         $this->validateAccountStatus($member);
         
         return view('index', ['firstName' => $member->getFirstName()]);

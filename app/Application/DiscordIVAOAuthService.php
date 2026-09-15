@@ -26,12 +26,6 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
     private $ConsentmentService;
     private $DiscordService;
 
-    /**
-     * DiscordIVAOAuthService constructor.
-     * @param $IVAOAPIService
-     * @param $DiscordGuildService
-     * @param $RolesService
-     */
     public function __construct(
         IVAOApiServiceContract $IVAOAPIService,
         GuildServiceContract $DiscordGuildService,
@@ -47,12 +41,6 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         $this->DiscordService = $DiscordService;
     }
 
-    /**
-     * DiscordIVAOAuthService constructor.
-     * @param $IVAOAPIService
-     * @param $member
-     * @param $DiscordGuildService
-     */
 
     private function getRolesToAssign(Member $member)
     {
@@ -84,16 +72,8 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         $this->ConsentmentService->create($consentment);
     }
 
-    /**
-     * Validate member account status before proceeding
-     * Throws InactiveAccountException if account is suspended or inactive
-     * 
-     * @param Member $member
-     * @throws InactiveAccountException
-     */
     private function validateAccountStatus(Member $member): void
     {
-        // Check if account is suspended
         if ($member->isSuspended()) {
             Log::warning([
                 'event' => 'account.suspended',
@@ -103,7 +83,6 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
             throw new InactiveAccountException('suspended');
         }
 
-        // Check if account is inactive
         if ($member->isInactive()) {
             Log::warning([
                 'event' => 'account.inactive',
@@ -113,7 +92,6 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
             throw new InactiveAccountException('inactive');
         }
 
-        // Check if account is not in active status
         if (!$member->isActive()) {
             Log::warning([
                 'event' => 'account.not_active',
@@ -128,23 +106,21 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
     public function validateMember(Member $member)
     {
         try {
-            // First, validate account status (suspended/inactive check)
             $this->validateAccountStatus($member);
 
             $roles = $this->getRolesToAssign($member);
             $guild = Guild::FromService($this->DiscordGuildService);
             
-            if ($roles->isNotEmpty() && $member->getTotalHours() > 5) {
+            if ($roles->isNotEmpty() && $member->getTotalHours() > config('brauth.min_hours')) {
                 $this->ConsentmentService->remove($member->getVid());
                 if ($this->ConsentmentService->hasAnotherLinkedAccount($member->getVid(), $member->getDiscordId())) {
                     $accounts = $this->ConsentmentService->getAnotherLinkedAccounts($member->getVid(), $member->getDiscordId());
 
                     foreach ($accounts as $account) {
-
                         try {
                             $this->DiscordGuildService->removeFromServer($account['discordId'], $guild);
                         } catch (\Exception $e) {
-                            // NOOP
+                            // The account may have already left the server
                         }
                     }
                 }
@@ -159,7 +135,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                         'event' => 'roles.empty',
                         'user' => $member->generateNickname(),
                     ]);
-                } else if($member->getTotalHours() < 5) {
+                } else {
                     Log::info([
                         'event' => 'member.no.enough.hours',
                         'user' => $member->generateNickname(),
@@ -169,7 +145,6 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                 throw new InvalidPermissionException();
             }
         } catch (InactiveAccountException $e) {
-            // Re-throw InactiveAccountException to be handled by the exception handler
             throw $e;
         } catch (\Exception $e) {
             Log::critical($e, [

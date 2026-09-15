@@ -14,5 +14,9 @@ return [
     'consentmentDeclaration1' => 'I agree to the declaration of',
     'consentmentDeclaration2' => 'and that the processing can be carried out as appropriate. I have read the ',
     'consent' => 'consent',
-    'privacyPolicy' => 'privacy policy'
+    'privacyPolicy' => 'privacy policy',
+    'revoke' => 'Want to revoke access to your account?',
+    'revokeAccount' => 'Click here',
+    'accountSuspendedException' => 'Your IVAO account is suspended',
+    'accountInactiveException' => 'Your IVAO account is inactive'
 ];

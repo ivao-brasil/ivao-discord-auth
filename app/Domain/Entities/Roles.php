@@ -39,17 +39,11 @@ class Roles
 
     }
 
-    /**
-     * @return mixed
-     */
     public function getSuffix()
     {
         return $this->suffix;
     }
 
-    /**
-     * @return mixed
-     */
     public function getId()
     {
         return $this->id;

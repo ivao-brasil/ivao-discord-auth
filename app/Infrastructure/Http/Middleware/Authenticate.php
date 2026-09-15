@@ -9,10 +9,6 @@ class Authenticate
 {
     private $IVAOAPI;
 
-    /**
-     * Authenticate constructor.
-     * @param $IVAOAPI
-     */
     public function __construct(IVAOApiServiceContract $IVAOAPI)
     {
         $this->IVAOAPI = $IVAOAPI;
@@ -20,12 +16,10 @@ class Authenticate
 
     public function handle($request, Closure $next)
     {
-        $memberData = $this->IVAOAPI->getUserData();
-        if($memberData['firstname'] != '') {
-            return $next($request);
-        } else {
-            return response()->redirectTo('ivao/login');
-            //return response()->json($memberData);
+        if ($this->IVAOAPI->getUserData() === null) {
+            return redirect()->route('login');
         }
+
+        return $next($request);
     }
 }

@@ -3,27 +3,28 @@
 namespace App\Infrastructure\Services;
 
 use App\Domain\Contracts\RolesServiceContract;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 
 class RolesService implements RolesServiceContract
 {
+    private const FILE = 'roles';
 
     public function getAllRoles()
     {
-        try {
-            $content = Storage::disk('local')->get('roles');
-            $data = Crypt::decryptString($content);
-            return json_decode($data);
-        } catch (FileNotFoundException $e) {
-            return json_decode("[]");
+        if (! Storage::disk('local')->exists(self::FILE)) {
+            return [];
         }
+
+        $data = Crypt::decryptString(Storage::disk('local')->get(self::FILE));
+
+        return json_decode($data);
     }
 
-    public function saveAllRoles($rolesData){
+    public function saveAllRoles($rolesData)
+    {
         $data = json_encode($rolesData);
         $data = Crypt::encryptString($data);
-        Storage::disk('local')->put('roles', $data);
+        Storage::disk('local')->put(self::FILE, $data);
     }
 }

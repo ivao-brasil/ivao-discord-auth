@@ -2,30 +2,42 @@
 
 namespace App\Infrastructure\Http\Controllers;
 
-use App\Core\Constants;
+use App\Domain\Contracts\IVAOApiServiceContract;
 use App\Exceptions\InvalidIVAOTokenException;
 use Illuminate\Http\Request;
-//use App\Services\IVAOApiService;
-
+use Illuminate\Support\Facades\Log;
+use Laravel\Socialite\Facades\Socialite;
 
 class IVAOController extends Controller
 {
-    private const IVAO_API_URL = "https://login.ivao.aero/index.php";
+    private $IVAOAPI;
 
-    public function login() {
-        $ROUTE = env('APP_URL').'/ivao/callback';
-        return redirect()->away(self::IVAO_API_URL."?url=$ROUTE");
+    public function __construct(IVAOApiServiceContract $IVAOAPI)
+    {
+        $this->IVAOAPI = $IVAOAPI;
     }
 
-    public function loginCallback(Request $request){
-        $IVAOTOKEN = $request->input('IVAOTOKEN');
+    public function login()
+    {
+        return Socialite::driver('ivao')->redirect();
+    }
 
-        if($IVAOTOKEN != 'error') {
-            $request->session()->put('IVAOTOKEN', $IVAOTOKEN);
-            return redirect('/');
-        }
-        else {
+    public function loginCallback(Request $request)
+    {
+        if ($request->has('error')) {
             throw new InvalidIVAOTokenException();
         }
+
+        try {
+            $user = Socialite::driver('ivao')->user();
+        } catch (\Exception $e) {
+            Log::warning(get_class($e).': '.$e->getMessage(), ['event' => 'ivao.sso.failed']);
+            throw new InvalidIVAOTokenException();
+        }
+
+        $request->session()->regenerate();
+        $this->IVAOAPI->storeUserData($user->getRaw());
+
+        return redirect('/');
     }
 }

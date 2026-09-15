@@ -11,7 +11,7 @@ services:
       - ./:/var/www/app
   db:
     container_name: ivaobr-discord-db
-    image: mariadb:10.1.26
+    image: mariadb:10.11
     ports:
       - 3306:3306
     volumes:
