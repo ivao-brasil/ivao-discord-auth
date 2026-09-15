@@ -33,16 +33,20 @@ class Member
         return $this->division;
     }
     /** @var Collection */
-
     private $staff;
+    /** @var Collection */
+    private $trialStaff;
     /** @var Collection */
     private $staffTitles;
     private $discordId;
     private $discordAccessToken;
     /** @var Collection */
-
     private $roles;
     private $accountStatus;
+    private $atcRating;
+    private $pilotRating;
+    private $hasGca;
+    private $ownsVirtualAirline;
 
     private $hoursAtc;
     private $hoursPilot;
@@ -63,6 +67,7 @@ class Member
         $positions = Collection::make($userData['userStaffPositions'] ?? [])->filter(fn ($position) => ! empty($position['id']));
 
         $this->staff = $positions->pluck('id')->values();
+        $this->trialStaff = $positions->where('onTrial', true)->pluck('id')->values();
 
         // HQ positions come as IVAO-XX in connectAs and are listed after division positions
         $this->staffTitles = $positions
@@ -72,6 +77,10 @@ class Member
             ->values();
 
         $this->accountStatus = $userData['rating']['networkRating']['id'] ?? null;
+        $this->atcRating = $userData['rating']['atcRating']['id'] ?? null;
+        $this->pilotRating = $userData['rating']['pilotRating']['id'] ?? null;
+        $this->hasGca = ! empty($userData['gcas']);
+        $this->ownsVirtualAirline = ! empty($userData['ownedVirtualAirlines']);
 
         // IVAO reports hours in seconds
         $hours = Collection::make($userData['hours'] ?? [])->pluck('hours', 'type');
@@ -95,20 +104,49 @@ class Member
         return $this->staff;
     }
 
+    public function getStaffPositions(bool $includeTrial = true): Collection
+    {
+        return $includeTrial ? $this->staff : $this->staff->diff($this->trialStaff)->values();
+    }
+
+    public function getAtcRating(): ?int
+    {
+        return $this->atcRating;
+    }
+
+    public function getPilotRating(): ?int
+    {
+        return $this->pilotRating;
+    }
+
+    public function hasGca(): bool
+    {
+        return $this->hasGca;
+    }
+
+    public function ownsVirtualAirline(): bool
+    {
+        return $this->ownsVirtualAirline;
+    }
+
+    /**
+     * @return Collection<int, string> Discord role ids
+     */
     public function getRoles()
     {
         return $this->roles;
     }
 
+    /**
+     * @param Collection<int, string> $roles Discord role ids
+     */
     public function setRoles(Collection $roles): void
     {
         $this->roles = $roles;
         Log::info([
             'event' => 'assign.roles',
             'user' => $this->vid,
-            'roles' => $roles->map(function($role) {
-				return $role->getSuffix();
-			})->toArray()
+            'roles' => $roles->all(),
         ]);
     }
 

@@ -6,7 +6,6 @@ namespace App\Infrastructure\Services;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Entities\Guild;
 use App\Domain\Entities\Member;
-use App\Domain\Entities\Roles;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
@@ -19,12 +18,14 @@ class DiscordGuildService implements GuildServiceContract
 
     private $botToken;
     private $guildId;
+    private $applicationId;
     private $serverRoles;
 
-    public function __construct($botToken, $guildId)
+    public function __construct($botToken, $guildId, $applicationId = null)
     {
         $this->botToken = $botToken;
         $this->guildId = $guildId;
+        $this->applicationId = $applicationId;
     }
 
     public function getGuildId()
@@ -38,45 +39,47 @@ class DiscordGuildService implements GuildServiceContract
             'access_token' => $member->getDiscordAccessToken(),
         ]);
 
-        $member->getRoles()->each(function ($role) use ($member, $guild) {
-            $this->skipWhenAboveBot($member, "role {$role->getId()}", function () use ($member, $role, $guild) {
-                $this->addRoleToMember($member, $role, $guild);
-            });
+        $member->getRoles()->each(function (string $roleId) use ($member, $guild) {
+            $this->addRole($member->getDiscordId(), $roleId, $guild);
         });
 
-        $this->skipWhenAboveBot($member, 'nickname', function () use ($member, $guild) {
-            $this->changeMemberNickname($member, $guild);
-        });
+        $this->setNickname($member->getDiscordId(), $member->generateNickname(), $guild);
     }
 
-    private function addRoleToMember(Member $member, Roles $role, Guild $guild)
-    {
-        $this->discord()->send('PUT', "/guilds/{$guild->getId()}/members/{$member->getDiscordId()}/roles/{$role->getId()}");
-    }
-
-    private function changeMemberNickname(Member $member, Guild $guild)
-    {
-        $this->discord()->patch("/guilds/{$guild->getId()}/members/{$member->getDiscordId()}", [
-            'nick' => $member->generateNickname(),
-        ]);
-    }
-
-    // Discord refuses changes to members whose top role is above the bot's (and to the server owner)
-    private function skipWhenAboveBot(Member $member, string $change, callable $callback)
+    public function getMember(string $discordId, Guild $guild): ?array
     {
         try {
-            $callback();
+            return $this->discord()->get("/guilds/{$guild->getId()}/members/{$discordId}")->json();
         } catch (RequestException $e) {
-            if ($e->response->status() !== 403) {
-                throw $e;
+            if ($e->response->status() === 404) {
+                return null;
             }
 
-            Log::info([
-                'event' => 'discord.missing.permissions',
-                'user' => $member->generateNickname(),
-                'change' => $change,
-            ]);
+            throw $e;
         }
+    }
+
+    public function addRole(string $discordId, string $roleId, Guild $guild): bool
+    {
+        return $this->unlessAboveBot($discordId, "add role {$roleId}", function () use ($discordId, $roleId, $guild) {
+            $this->discord()->send('PUT', "/guilds/{$guild->getId()}/members/{$discordId}/roles/{$roleId}");
+        });
+    }
+
+    public function removeRole(string $discordId, string $roleId, Guild $guild): bool
+    {
+        return $this->unlessAboveBot($discordId, "remove role {$roleId}", function () use ($discordId, $roleId, $guild) {
+            $this->discord()->delete("/guilds/{$guild->getId()}/members/{$discordId}/roles/{$roleId}");
+        });
+    }
+
+    public function setNickname(string $discordId, string $nickname, Guild $guild): bool
+    {
+        return $this->unlessAboveBot($discordId, 'nickname', function () use ($discordId, $nickname, $guild) {
+            $this->discord()->patch("/guilds/{$guild->getId()}/members/{$discordId}", [
+                'nick' => $nickname,
+            ]);
+        });
     }
 
     public function getServerRoles(Guild $guild)
@@ -84,9 +87,9 @@ class DiscordGuildService implements GuildServiceContract
         return $this->serverRoles ??= $this->discord()->get("/guilds/{$guild->getId()}/roles")->json();
     }
 
-    public function getRolename(Guild $guild, Roles $role)
+    public function getRolename(Guild $guild, string $roleId)
     {
-        return Collection::make($this->getServerRoles($guild))->firstWhere('id', (string) $role->getId())['name'] ?? null;
+        return Collection::make($this->getServerRoles($guild))->firstWhere('id', $roleId)['name'] ?? null;
     }
 
     public function removeFromServer($discordId, Guild $guild)
@@ -100,6 +103,38 @@ class DiscordGuildService implements GuildServiceContract
             }
 
             throw $e;
+        }
+    }
+
+    public function editInteractionResponse(string $interactionToken, string $content): void
+    {
+        Http::baseUrl(self::API_URL)
+            ->acceptJson()
+            ->patch("/webhooks/{$this->applicationId}/{$interactionToken}/messages/@original", [
+                'content' => $content,
+            ])
+            ->throw();
+    }
+
+    // Discord refuses changes to members whose top role is above the bot's (and to the server owner)
+    private function unlessAboveBot(string $discordId, string $change, callable $callback): bool
+    {
+        try {
+            $callback();
+
+            return true;
+        } catch (RequestException $e) {
+            if ($e->response->status() !== 403) {
+                throw $e;
+            }
+
+            Log::info([
+                'event' => 'discord.missing.permissions',
+                'discordId' => $discordId,
+                'change' => $change,
+            ]);
+
+            return false;
         }
     }
 

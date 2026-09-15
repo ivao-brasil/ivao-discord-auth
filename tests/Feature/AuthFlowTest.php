@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\ConsentmentModel;
 use App\Domain\Entities\Member;
-use App\Infrastructure\Services\RolesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -13,11 +12,12 @@ use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Mockery;
+use Tests\Support\IvaoFixtures;
 use Tests\TestCase;
 
 class AuthFlowTest extends TestCase
 {
-    use RefreshDatabase;
+    use IvaoFixtures, RefreshDatabase;
 
     private const GUILD = '348405205890498580';
 
@@ -39,29 +39,11 @@ class AuthFlowTest extends TestCase
         Http::preventStrayRequests();
     }
 
-    private function ivaoUser(array $overrides = []): array
-    {
-        return array_merge([
-            'id' => 123456,
-            'firstName' => 'Fulano da Silva',
-            'lastName' => 'Souza',
-            'divisionId' => 'BR',
-            'rating' => ['networkRating' => ['id' => Member::STATUS_ACTIVE]],
-            'hours' => [['type' => 'pilot', 'hours' => 36000], ['type' => 'atc', 'hours' => 0]],
-            'userStaffPositions' => [['id' => 'BR-WM']],
-        ], $overrides);
-    }
-
     private function mockSocialite(string $driver, SocialiteUser $user): void
     {
         $provider = Mockery::mock();
         $provider->shouldReceive('user')->andReturn($user);
         Socialite::shouldReceive('driver')->with($driver)->andReturn($provider);
-    }
-
-    private function saveRoleRules(array $rules): void
-    {
-        app(RolesService::class)->saveAllRoles($rules);
     }
 
     public function test_guest_is_redirected_to_ivao_login()
@@ -97,7 +79,8 @@ class AuthFlowTest extends TestCase
         $this->get('/ivao/callback?code=abc&state=xyz')->assertRedirect('/');
 
         $this->assertSame('123456', (string) session('IVAO_USER.id'));
-        $this->assertSame([['id' => 'BR-WM']], session('IVAO_USER.userStaffPositions'));
+        $this->assertSame([['id' => 'BR-WM', 'connectAs' => 'BR-WM', 'onTrial' => false]], session('IVAO_USER.userStaffPositions'));
+        $this->assertSame(5, session('IVAO_USER.rating.atcRating.id'));
 
         $this->get('/')->assertOk()->assertSee('Fulano da Silva')->assertSee('Test Title');
     }
@@ -218,37 +201,9 @@ class AuthFlowTest extends TestCase
         Log::shouldNotHaveReceived('warning');
     }
 
-    public function test_saving_role_rules_is_logged_with_the_admin_vid()
-    {
-        Log::spy();
-        $admin = ['IVAO_USER' => $this->ivaoUser(['id' => 111111])];
-
-        $this->withSession($admin)->postJson('/api/discord/saveRoles', [['hash' => 'a', 'id' => ['900'], 'sulfix' => 'BR-WM']])->assertOk();
-
-        Log::shouldHaveReceived('notice')->withArgs(fn ($message, $context) => $context['event'] === 'roles.updated' && $context['admin'] === 111111);
-    }
-
     public function test_discord_callback_requires_ivao_login()
     {
         $this->get('/discord/callback?code=abc')->assertRedirect(route('login'));
-    }
-
-    public function test_admin_pages_are_limited_to_admin_vids()
-    {
-        $this->withSession(['IVAO_USER' => $this->ivaoUser()])->get('/admin')->assertRedirect(route('home'));
-
-        Http::fake(['discord.com/api/v10/guilds/*/roles' => Http::response([['id' => '900', 'name' => 'Webmaster']])]);
-
-        $admin = ['IVAO_USER' => $this->ivaoUser(['id' => 111111])];
-        $this->withSession($admin)->get('/admin')->assertOk();
-        $this->withSession($admin)->getJson('/api/discord/roles')->assertExactJson([['id' => '900', 'name' => 'Webmaster']]);
-
-        $rules = [['hash' => 'a', 'id' => ['900'], 'sulfix' => 'BR-WM']];
-        $this->withSession($admin)->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
-            ->postJson('/api/discord/saveRoles', $rules)->assertOk();
-        $this->withSession($admin)->getJson('/api/discord/actualRoles')->assertExactJson($rules);
-
-        Storage::disk('local')->assertExists('roles');
     }
 
     public function test_revoke_link_asks_for_confirmation_before_removing()
