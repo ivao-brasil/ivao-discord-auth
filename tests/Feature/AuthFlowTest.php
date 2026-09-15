@@ -8,6 +8,7 @@ use App\Infrastructure\Services\RolesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
@@ -200,6 +201,33 @@ class AuthFlowTest extends TestCase
         $this->assertSame(0, ConsentmentModel::count());
     }
 
+    public function test_expected_refusals_are_not_reported_to_the_log_channel()
+    {
+        $this->saveRoleRules([['hash' => 'b', 'id' => ['901'], 'sulfix' => 'Member']]);
+        Http::fake();
+        $this->mockSocialite('discord', (new SocialiteUser)->setToken('t')->map(['id' => '555']));
+
+        Log::spy();
+
+        $this->withSession(['IVAO_USER' => $this->ivaoUser(['hours' => []])])
+            ->get('/discord/callback?code=abc&state=xyz')
+            ->assertSee(__('text.invalidPermissionException'));
+
+        Log::shouldNotHaveReceived('critical');
+        Log::shouldNotHaveReceived('error');
+        Log::shouldNotHaveReceived('warning');
+    }
+
+    public function test_saving_role_rules_is_logged_with_the_admin_vid()
+    {
+        Log::spy();
+        $admin = ['IVAO_USER' => $this->ivaoUser(['id' => 111111])];
+
+        $this->withSession($admin)->postJson('/api/discord/saveRoles', [['hash' => 'a', 'id' => ['900'], 'sulfix' => 'BR-WM']])->assertOk();
+
+        Log::shouldHaveReceived('notice')->withArgs(fn ($message, $context) => $context['event'] === 'roles.updated' && $context['admin'] === 111111);
+    }
+
     public function test_discord_callback_requires_ivao_login()
     {
         $this->get('/discord/callback?code=abc')->assertRedirect(route('login'));
@@ -223,12 +251,27 @@ class AuthFlowTest extends TestCase
         Storage::disk('local')->assertExists('roles');
     }
 
+    public function test_revoke_link_asks_for_confirmation_before_removing()
+    {
+        ConsentmentModel::create(['userVid' => '123456', 'discordId' => '555', 'nickName' => 'x', 'roles' => 'r', 'division' => 'BR', 'status' => true]);
+        Http::fake();
+
+        $this->withSession(['IVAO_USER' => $this->ivaoUser()])
+            ->get('/revoke')
+            ->assertOk()
+            ->assertSee(__('text.revokeConfirmBody'))
+            ->assertSee('name="_token"', false);
+
+        Http::assertNothingSent();
+        $this->assertEquals(1, ConsentmentModel::sole()->status);
+    }
+
     public function test_revoke_removes_linked_accounts_from_guild()
     {
         ConsentmentModel::create(['userVid' => '123456', 'discordId' => '555', 'nickName' => 'x', 'roles' => 'r', 'division' => 'BR', 'status' => true]);
         Http::fake(['discord.com/api/v10/*' => Http::response(null, 204)]);
 
-        $this->withSession(['IVAO_USER' => $this->ivaoUser()])->get('/revoke')->assertRedirect('/');
+        $this->withSession(['IVAO_USER' => $this->ivaoUser()])->post('/revoke')->assertRedirect('/');
 
         Http::assertSent(fn (Request $r) => $r->method() === 'DELETE'
             && $r->url() === 'https://discord.com/api/v10/guilds/'.self::GUILD.'/members/555');
@@ -240,7 +283,7 @@ class AuthFlowTest extends TestCase
         ConsentmentModel::create(['userVid' => '123456', 'discordId' => '555', 'nickName' => 'x', 'roles' => 'r', 'division' => 'BR', 'status' => true]);
         Http::fake(['discord.com/api/v10/*' => Http::response(['message' => 'Unknown Member', 'code' => 10007], 404)]);
 
-        $this->withSession(['IVAO_USER' => $this->ivaoUser()])->get('/revoke')->assertRedirect('/');
+        $this->withSession(['IVAO_USER' => $this->ivaoUser()])->post('/revoke')->assertRedirect('/');
 
         $this->assertEquals(0, ConsentmentModel::sole()->status);
     }

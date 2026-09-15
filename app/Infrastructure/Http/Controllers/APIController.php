@@ -4,7 +4,9 @@ namespace App\Infrastructure\Http\Controllers;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Contracts\RolesServiceContract;
 use App\Domain\Entities\Guild;
+use App\Domain\Contracts\IVAOApiServiceContract;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class APIController extends Controller
 {
@@ -26,8 +28,14 @@ class APIController extends Controller
         return $this->roleService->getAllRoles();
     }
 
-    function saveRoles(Request $request){
-        return $this->roleService->saveAllRoles($request->all());
+    function saveRoles(Request $request, IVAOApiServiceContract $IVAOAPI){
+        $this->roleService->saveAllRoles($request->all());
+
+        Log::notice('Role rules updated', [
+            'event' => 'roles.updated',
+            'admin' => $IVAOAPI->getUserData()['id'],
+            'rules' => count($request->all()),
+        ]);
     }
 
 }

@@ -18,5 +18,9 @@ return [
     'revoke' => 'Want to revoke access to your account?',
     'revokeAccount' => 'Click here',
     'accountSuspendedException' => 'Your IVAO account is suspended',
-    'accountInactiveException' => 'Your IVAO account is inactive'
+    'accountInactiveException' => 'Your IVAO account is inactive',
+    'revokeConfirmTitle' => 'Revoke access',
+    'revokeConfirmBody' => 'Your Discord accounts linked to this VID will be removed from the server. You can join again at any time.',
+    'revokeConfirmButton' => 'Revoke access',
+    'cancel' => 'Cancel'
 ];

@@ -88,7 +88,7 @@ return [
             'url' => env('LOG_DISCORD_WEBHOOK_URL') ? rtrim(env('LOG_DISCORD_WEBHOOK_URL'), '/').'/slack' : null,
             'username' => env('LOG_DISCORD_USERNAME', env('APP_NAME', 'Laravel')),
             'emoji' => env('LOG_DISCORD_EMOJI', ':boom:'),
-            'level' => env('LOG_DISCORD_LEVEL', 'debug'),
+            'level' => env('LOG_DISCORD_LEVEL', 'notice'),
             'replace_placeholders' => true,
         ],
 

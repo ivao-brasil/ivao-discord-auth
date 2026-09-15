@@ -71,7 +71,7 @@ class DiscordGuildService implements GuildServiceContract
                 throw $e;
             }
 
-            Log::warning([
+            Log::info([
                 'event' => 'discord.missing.permissions',
                 'user' => $member->generateNickname(),
                 'change' => $change,

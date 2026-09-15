@@ -75,7 +75,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
     private function validateAccountStatus(Member $member): void
     {
         if ($member->isSuspended()) {
-            Log::warning([
+            Log::info([
                 'event' => 'account.suspended',
                 'user' => $member->generateNickname(),
                 'vid' => $member->getVid()
@@ -84,7 +84,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         }
 
         if ($member->isInactive()) {
-            Log::warning([
+            Log::info([
                 'event' => 'account.inactive',
                 'user' => $member->generateNickname(),
                 'vid' => $member->getVid()
@@ -93,7 +93,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         }
 
         if (!$member->isActive()) {
-            Log::warning([
+            Log::info([
                 'event' => 'account.not_active',
                 'user' => $member->generateNickname(),
                 'vid' => $member->getVid(),
@@ -144,7 +144,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
                 }
                 throw new InvalidPermissionException();
             }
-        } catch (InactiveAccountException $e) {
+        } catch (InactiveAccountException|InvalidPermissionException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::critical($e, [

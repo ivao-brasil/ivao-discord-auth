@@ -136,7 +136,7 @@
 
                         <span class="register">
                             @lang('text.revoke')
-                            <a href="/revoke">@lang('text.revokeAccount')</a>
+                            <a href="{{ route('revoke') }}">@lang('text.revokeAccount')</a>
                         </span>
                     </div>
                 </div>
