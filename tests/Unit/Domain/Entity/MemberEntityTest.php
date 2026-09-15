@@ -68,6 +68,43 @@ class MemberEntityTest extends TestCase
         $this->assertEquals(['BR-WM'], $member->getStaff()->all());
     }
 
+    public function testShouldPrefixHqPositionsAndListThemAfterDivisionPositions()
+    {
+        $member = new Member($this->ivaoUser([
+            'firstName' => 'Mikhael da Silva',
+            'userStaffPositions' => [
+                ['id' => 'WD6', 'connectAs' => 'IVAO-WD6'],
+                ['id' => 'BR-MA1', 'connectAs' => 'BR-MA1'],
+                ['id' => 'BR-WM', 'connectAs' => 'BR-WM'],
+            ],
+        ]));
+
+        $this->assertEquals('Mikhael | BR-MA1 BR-WM IVAO-WD6', $member->generateNickname());
+        $this->assertEquals(['WD6', 'BR-MA1', 'BR-WM'], $member->getStaff()->all());
+    }
+
+    public function testShouldDropPositionsFromTheEndWhenNicknameIsTooLong()
+    {
+        $member = new Member($this->ivaoUser([
+            'firstName' => 'Maximiliano',
+            'userStaffPositions' => $this->staffPositions('BR-DIR', 'BR-ADIR', 'BR-WM', 'BR-AWM'),
+        ]));
+
+        $nickname = $member->generateNickname();
+        $this->assertEquals('Maximiliano | BR-DIR BR-ADIR', $nickname);
+        $this->assertLessThanOrEqual(Member::NICKNAME_MAX_LENGTH, mb_strlen($nickname));
+    }
+
+    public function testShouldCutNicknameWhenASinglePositionDoesNotFit()
+    {
+        $member = new Member($this->ivaoUser([
+            'firstName' => 'Bartholomeuzinhooliveira',
+            'userStaffPositions' => $this->staffPositions('BR-ADIR'),
+        ]));
+
+        $this->assertSame(Member::NICKNAME_MAX_LENGTH, mb_strlen($member->generateNickname()));
+    }
+
     public function testShouldSumPilotAndAtcHoursOnly()
     {
         $member = new Member($this->ivaoUser());

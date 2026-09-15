@@ -17,6 +17,8 @@ class Member
     const STATUS_ACTIVE_11 = 11;
     const STATUS_ACTIVE_12 = 12;
 
+    const NICKNAME_MAX_LENGTH = 32;
+
     private $vid;
 
     public function getVid()
@@ -33,6 +35,8 @@ class Member
     /** @var Collection */
 
     private $staff;
+    /** @var Collection */
+    private $staffTitles;
     private $discordId;
     private $discordAccessToken;
     /** @var Collection */
@@ -56,9 +60,15 @@ class Member
         $this->firstName = $userData['firstName'] ?? '';
         $this->division = $userData['divisionId'] ?? null;
 
-        $this->staff = Collection::make($userData['userStaffPositions'] ?? [])
-            ->pluck('id')
-            ->filter()
+        $positions = Collection::make($userData['userStaffPositions'] ?? [])->filter(fn ($position) => ! empty($position['id']));
+
+        $this->staff = $positions->pluck('id')->values();
+
+        // HQ positions come as IVAO-XX in connectAs and are listed after division positions
+        $this->staffTitles = $positions
+            ->map(fn ($position) => $position['connectAs'] ?? $position['id'])
+            ->partition(fn ($title) => ! str_starts_with($title, 'IVAO-'))
+            ->flatten()
             ->values();
 
         $this->accountStatus = $userData['rating']['networkRating']['id'] ?? null;
@@ -133,12 +143,20 @@ class Member
 
     public function generateNickname()
     {
-        if ($this->isStaff()) {
-            $nick = explode(" ", $this->firstName)[0] . " | " . $this->staff->join(' ');
-        } else {
-            $nick = explode(" ", $this->firstName)[0] . " - $this->vid";
+        $firstName = explode(' ', $this->firstName)[0];
+
+        if (! $this->isStaff()) {
+            return mb_substr("$firstName - $this->vid", 0, self::NICKNAME_MAX_LENGTH);
         }
-        return $nick;
+
+        // Discord rejects longer nicknames, so drop positions from the end until it fits
+        $titles = $this->staffTitles;
+        do {
+            $nick = "$firstName | ".$titles->join(' ');
+            $titles = $titles->slice(0, -1);
+        } while (mb_strlen($nick) > self::NICKNAME_MAX_LENGTH && $titles->isNotEmpty());
+
+        return mb_substr($nick, 0, self::NICKNAME_MAX_LENGTH);
     }
 
     public function isStaff()
