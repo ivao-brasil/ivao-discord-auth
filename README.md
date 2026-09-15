@@ -34,12 +34,20 @@ The system is built on [Laravel 12](https://laravel.com/docs/12.x); see its docu
 4. Run `php artisan migrate --force`.
 5. Cache the configuration for production: `php artisan optimize`. Run it again after every change to `.env`.
 
+### Deployment
+
+Every push to `main` runs the tests, installs the production dependencies and uploads the application by FTP (`.github/workflows/main.yml`). Configure the `Production` environment of the repository with:
+
+- Secrets: `FTP_HOST`, `FTP_USERNAME`, `FTP_PASSWORD` and `SERVER_DIR` (the application folder, not `public`, ending with `/`)
+- Variable: `IS_DEPLOYMENT_ENABLED` set to `true`
+
+`.env` and `storage/` are never uploaded. Run `php artisan migrate --force` on the server when a new migration is added.
+
 ### Upgrading from the Laravel 7 version
 
-1. Switch the site to PHP 8.4.
-2. Deploy the new code and run `composer install --no-dev --optimize-autoloader`.
-3. In `.env`, add `IVAO_CLIENT_ID` and `IVAO_CLIENT_SECRET` and rename `CACHE_DRIVER` to `CACHE_STORE`. Keep `APP_KEY` and `storage/app/roles`.
-4. Run `php artisan migrate --force` (nothing new to migrate) and `php artisan optimize`.
+1. In `.env`, add `IVAO_CLIENT_ID` and `IVAO_CLIENT_SECRET`. Keep `APP_KEY` and `storage/app/roles`.
+2. Deploy, then delete the old caches on the server: `rm -f bootstrap/cache/*.php`.
+3. Switch the site to PHP 8.4.
 
 ## Local development
 

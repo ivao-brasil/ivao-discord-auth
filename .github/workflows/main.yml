@@ -1,0 +1,54 @@
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+name: 🚀 Deploy to the Production environment
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
+
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+
+      - name: 🧪 Run tests
+        run: |
+          cp .env.example .env
+          composer install --no-interaction --no-progress
+          php artisan test
+          rm .env
+
+      - name: 📦 Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+      - name: 📂 Sync files
+        if: ${{ vars.IS_DEPLOYMENT_ENABLED == 'true' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: ${{ secrets.SERVER_DIR }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            tests/**
+            docker/**
+            storage/**
+            .env*
+            .editorconfig
+            .styleci.yml
+            docker-compose.yml
+            phpunit.xml
+            README.md
