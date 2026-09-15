@@ -14,14 +14,12 @@ return [
     |
     */
 
-    'mailgun' => [
-        'domain' => env('MAILGUN_DOMAIN'),
-        'secret' => env('MAILGUN_SECRET'),
-        'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
+    'postmark' => [
+        'key' => env('POSTMARK_API_KEY'),
     ],
 
-    'postmark' => [
-        'token' => env('POSTMARK_TOKEN'),
+    'resend' => [
+        'key' => env('RESEND_API_KEY'),
     ],
 
     'ses' => [
@@ -30,10 +28,26 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'ivao' => [
+        'client_id' => env('IVAO_CLIENT_ID'),
+        'client_secret' => env('IVAO_CLIENT_SECRET'),
+        'redirect' => env('APP_URL').'/ivao/callback',
+        'scopes' => env('IVAO_SCOPES', 'profile configuration'),
+    ],
+
     'discord' => [
         'client_id' => env('DISCORD_CLIENT_ID'),
         'client_secret' => env('DISCORD_CLIENT_SECRET'),
-        'redirect' => env('APP_URL').'/discord/callback'
+        'redirect' => env('APP_URL').'/discord/callback',
+        'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'guild_id' => env('DISCORD_GUILD_ID'),
+    ],
+
+    'slack' => [
+        'notifications' => [
+            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
+            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+        ],
     ],
 
 ];

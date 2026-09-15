@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class Member
 {
-    // IVAO Account Status Constants
+    // IVAO network rating ids
     const STATUS_SUSPENDED = 0;
     const STATUS_INACTIVE = 1;
     const STATUS_ACTIVE = 2;
@@ -19,9 +19,6 @@ class Member
 
     private $vid;
 
-    /**
-     * @return mixed
-     */
     public function getVid()
     {
         return $this->vid;
@@ -29,9 +26,6 @@ class Member
     private $firstName;
     private $division;
 
-    /**
-     * @return mixed
-     */
     public function getDivision()
     {
         return $this->division;
@@ -54,24 +48,25 @@ class Member
     }
 
     /**
-     * Member constructor.
-     * @param $IVAOTOKEN
+     * @param array $userData IVAO API v2 user (/v2/users/me)
      */
-    public function __construct($userData)
+    public function __construct(array $userData)
     {
-        $this->vid = $userData['vid'];
-        $this->firstName = $userData['firstname'];
-        $this->division = $userData['division'];
+        $this->vid = (string) $userData['id'];
+        $this->firstName = $userData['firstName'] ?? '';
+        $this->division = $userData['divisionId'] ?? null;
 
-        if ($userData['staff'] != null) {
-            $this->staff = Collection::make(explode(":", $userData['staff']));
-        } else {
-            $this->staff = Collection::make();
-        }
+        $this->staff = Collection::make($userData['userStaffPositions'] ?? [])
+            ->pluck('id')
+            ->filter()
+            ->values();
 
-        $this->accountStatus = $userData['rating'];
-        $this->hoursAtc = $userData['hours_atc'] / 3600;
-        $this->hoursPilot = $userData['hours_pilot'] / 3600;
+        $this->accountStatus = $userData['rating']['networkRating']['id'] ?? null;
+
+        // IVAO reports hours in seconds
+        $hours = Collection::make($userData['hours'] ?? [])->pluck('hours', 'type');
+        $this->hoursAtc = ($hours['atc'] ?? 0) / 3600;
+        $this->hoursPilot = ($hours['pilot'] ?? 0) / 3600;
     }
 
     public static function FromAPIRequest(IVAOApiServiceContract $IVAOAPI)
@@ -80,33 +75,21 @@ class Member
         return new self($userData);
     }
 
-    /**
-     * @return mixed
-     */
     public function getFirstName()
     {
         return $this->firstName;
     }
 
-    /**
-     * @return Collection
-     */
     public function getStaff(): Collection
     {
         return $this->staff;
     }
 
-    /**
-     * @return Collection
-     */
     public function getRoles()
     {
         return $this->roles;
     }
 
-    /**
-     * @param Collection $roles
-     */
     public function setRoles(Collection $roles): void
     {
         $this->roles = $roles;
@@ -119,33 +102,21 @@ class Member
         ]);
     }
 
-    /**
-     * @return mixed
-     */
     public function getDiscordAccessToken()
     {
         return $this->discordAccessToken;
     }
 
-    /**
-     * @param mixed $discordAccessToken
-     */
     public function setDiscordAccessToken($discordAccessToken): void
     {
         $this->discordAccessToken = $discordAccessToken;
     }
 
-    /**
-     * @return mixed
-     */
     public function getDiscordId()
     {
         return $this->discordId;
     }
 
-    /**
-     * @param mixed $discordId
-     */
     public function setDiscordId($discordId): void
     {
         $this->discordId = $discordId;
@@ -175,10 +146,6 @@ class Member
         return $this->staff->isNotEmpty();
     }
 
-    /**
-     * Check if account is active
-     * @return bool
-     */
     public function isActive() {
         return in_array($this->accountStatus, [
             self::STATUS_ACTIVE,
@@ -187,35 +154,19 @@ class Member
         ]);
     }
 
-    /**
-     * Check if account is suspended
-     * @return bool
-     */
     public function isSuspended() {
         return $this->accountStatus === self::STATUS_SUSPENDED;
     }
 
-    /**
-     * Check if account is inactive
-     * @return bool
-     */
     public function isInactive() {
         return $this->accountStatus === self::STATUS_INACTIVE;
     }
 
-    /**
-     * Get the account status code
-     * @return mixed
-     */
     public function getAccountStatus()
     {
         return $this->accountStatus;
     }
 
-    /**
-     * Get human-readable account status
-     * @return string
-     */
     public function getAccountStatusReason(): string
     {
         if ($this->isSuspended()) {

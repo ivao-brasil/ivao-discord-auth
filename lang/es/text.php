@@ -16,5 +16,7 @@ return [
     'consent' => 'consentimiento',
     'privacyPolicy' => 'politicas de privacidad',
     'revoke' => '¿Quieres revocar el acceso a tu cuenta?',
-    'revokeAccount' => 'Click aqui'
+    'revokeAccount' => 'Click aqui',
+    'accountSuspendedException' => 'Tu cuenta de IVAO está suspendida',
+    'accountInactiveException' => 'Tu cuenta de IVAO está inactiva'
 ];

@@ -5,38 +5,57 @@
 
 ## About
 
-This system provide a Discord Validation tool based on IVAO API for every IVAO Division. Read the following topics in order to know how install it.
+This system provide a Discord Validation tool based on IVAO SSO for every IVAO Division. Members log in with their IVAO account, connect their Discord account and are added to the division server with roles and nickname based on their IVAO staff positions. Read the following topics in order to know how install it.
 
 ## Requirements
 
-Once that this tool is based at [Laravel Framework](https://laravel.com/docs/7.x) for PHP, the system requirements is the same requirements of the framework. Please visit Laravel Documentation to discover it.
+- PHP 8.4 (with `pdo_mysql`, `mbstring`, `openssl`, `curl` and `json`)
+- Composer 2
+- MySQL 5.7+ / MariaDB 10.3+
 
-## Instalation
+The system is built on [Laravel 12](https://laravel.com/docs/12.x); see its documentation for the full server requirements.
 
-You can transfer the source code to your server using following options:
+## Installation
 
-1. Download it to .zip file and upload it to your server or
-2. Use git clone command to clone this repository (remember to get master branch)
+1. Clone this repository (or upload the source code) and point the web server document root to the `public` folder.
+2. Install dependencies with `composer install --no-dev --optimize-autoloader`.
+3. Create a `.env` file using `.env.example` as reference and set the following values:
+    - `APP_KEY`: generate it with `php artisan key:generate`. **Keep the same key when upgrading**: it is used to decrypt the saved role rules.
+    - `APP_URL`: the URL of your application, e.g. `https://discord.br.ivao.aero`.
+    - `IVAO_CLIENT_ID` / `IVAO_CLIENT_SECRET`: the credentials of your IVAO SSO application. Register `APP_URL/ivao/callback` as its redirect URI.
+    - `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`: the credentials of your [Discord Application](https://discord.com/developers/applications). Register `APP_URL/discord/callback` as its OAuth2 redirect URL.
+    - `DISCORD_BOT_TOKEN`: the token of the bot of that application.
+    - `DISCORD_GUILD_ID`: the ID of your server (right click the server name with Developer Mode on, then Copy ID).
+    - `ADMIN_VIDS`: the VIDs of the system admins separated by "**:**", for example `999999:999998`.
+    - `LANGUAGE`: the language you want to use, see `Language` topic below.
+    - `DEFAULT_TITLE`: the HTML title for pages. Words are separated by `_`, e.g. `IVAO_BR_Discord_Auth_System`.
+    - `LOG_DISCORD_WEBHOOK_URL` (optional): a Discord webhook that receives the application logs.
+    - `MIN_HOURS` (optional, default `5`): members need more than this many pilot + ATC hours to join.
+4. Run `php artisan migrate --force`.
+5. Cache the configuration for production: `php artisan optimize`. Run it again after every change to `.env`.
 
-After that, follow the procedure below to put your application working.
+### Upgrading from the Laravel 7 version
 
-1. Install dependencies using composer running `composer install` on your terminal (for cPanel you can access to the terminal going to `Advanced` section on the home page)
-2. Create a new .env file using example.env for reference setting the following values
-    - `APP_KEY`: You can use `php artisan key:generate` command to generate it.
-        - **NOTE:** You need to have access to the server terminal to use `php artisan key:generate` command. If you don't have it, you can run the command locally in your machine and copy the key generated to your server.(follow step 1 for how to reach the terminal on cPanel)
-    - `APP_URL`: The url of your application
-    - `DISCORD_CLIENT_ID`: the **CLIENT ID** of your Discord Application (you need to create it at [Discord Developer Portal](https://discordapp.com/developers/applications))
-    - `DISCORD_CLIENT_SECRET`: The **CLIENT SECRET** of your Discord application
-    - `DISCORD_BOT_TOKEN`: The **ACCESS TOKEN** for your bot application, remember to register it at your server and give the necessary permission to handle all other roles.
-    - `DISCORD_GUILD_ID`: The **ID** of your server (You can get this ID right clicking the name of your discord server and clicking on Copy ID (It requires to have developer mode turned on))
-    - `ADMIN_VIDS`: The VID of system admins separated by a colon "**:**". For example: "**999999:999998**"
-    - `LANGUAGE`: The language you want to use, see `Language` topic below.
-    - `DEFAULT_TITLE`: The default HTML title for pages. The words is separated by `_` instead of normal space. For example: `IVAO_BR_Discord_Auth_System` will result in a title like `IVAO BR Discord Auth System`
+1. Switch the site to PHP 8.4.
+2. Deploy the new code and run `composer install --no-dev --optimize-autoloader`.
+3. In `.env`, add `IVAO_CLIENT_ID` and `IVAO_CLIENT_SECRET` and rename `CACHE_DRIVER` to `CACHE_STORE`. Keep `APP_KEY` and `storage/app/roles`.
+4. Run `php artisan migrate --force` (nothing new to migrate) and `php artisan optimize`.
+
+## Local development
+
+```bash
+composer install
+cp .env.example .env && php artisan key:generate
+php artisan migrate
+php artisan serve        # http://localhost:8000
+php artisan test
+```
+
+For local testing, register `http://localhost:8000/ivao/callback` and `http://localhost:8000/discord/callback` as redirect URIs.
 
 ## Notes
 
-- You will need to create a Discord Application in order to get the **CLIENT_ID**. Make sure to add your application path `/discord/callback`, for example `discord.br.ivao.aero/discord/callback`, as redirect URL for OAuth2, otherwise, the Discord Auth will not work correctly.
-- To add the db.division.ivao.aero if it's not added, you can go to Remote MySQL on cPanel and add the access Host.
+- To add the db.division.ivao.aero if it's not added, you can go to Remote MySQL on cPanel/Plesk and add the access Host.
 
 ## Using
 
@@ -62,4 +81,4 @@ The actual language is seted by env variable `LANGUAGE`.
 
 ## Inserting new Languages
 
-To insert new languages you need to make a copy from `resources/lang/en` folder to new folder with preffix of the new language, for example: `resoruces/lang/fr` for French. After that just edit the file `text.php` and translate the entries of language array.
+To insert new languages you need to make a copy from `lang/en` folder to new folder with prefix of the new language, for example: `lang/fr` for French. After that just edit the file `text.php` and translate the entries of language array.

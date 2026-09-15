@@ -2,68 +2,94 @@
 
 namespace Tests\Unit\Domain\Entity;
 
-use PHPUnit\Framework\TestCase;
-
 use App\Domain\Entities\Member;
+use PHPUnit\Framework\TestCase;
 
 class MemberEntityTest extends TestCase
 {
-    private function generateNormalMember() {
-        $memberData = [
-            'vid' => '123456',
-            'firstname' => 'Fulano da Silva',
-            'division' => 'BR',
-            'staff' => null
-        ];
-
-        return new Member($memberData);
+    private function ivaoUser(array $overrides = []): array
+    {
+        return array_merge([
+            'id' => 123456,
+            'firstName' => 'Fulano da Silva',
+            'lastName' => 'Souza',
+            'divisionId' => 'BR',
+            'rating' => ['networkRating' => ['id' => Member::STATUS_ACTIVE]],
+            'hours' => [
+                ['type' => 'pilot', 'hours' => 7200],
+                ['type' => 'atc', 'hours' => 3600],
+                ['type' => 'staff', 'hours' => 999999],
+            ],
+            'userStaffPositions' => [],
+        ], $overrides);
     }
 
-    private function generateSinglePositionStaff() {
-        $memberData = [
-            'vid' => '123456',
-            'firstname' => 'Ciclano da Silva',
-            'division' => 'BR',
-            'staff' => 'ZZ-WM'
-        ];
-
-        return new Member($memberData);
-    }
-
-    private function generateMultiplePositionStaff() {
-        $memberData = [
-            'vid' => '123456',
-            'firstname' => 'Beltrano da Silva',
-            'division' => 'BR',
-            'staff' => 'ZZ-WM:ZZ-DIR'
-        ];
-
-        return new Member($memberData);
+    private function staffPositions(string ...$ids): array
+    {
+        return array_map(fn ($id) => ['id' => $id], $ids);
     }
 
     public function testShouldGenerateCorrectNickNameForMember()
     {
-        $member = $this->generateNormalMember();
-        $this->assertEquals($member->generateNickname(), 'Fulano - 123456');
+        $member = new Member($this->ivaoUser());
+        $this->assertEquals('Fulano - 123456', $member->generateNickname());
     }
 
-    public function testShouldGenerateCorrectNickNameForStaffWithSinglePosition() {
-        $member = $this->generateSinglePositionStaff();
-        $this->assertEquals($member->generateNickname(), 'Ciclano | ZZ-WM');
+    public function testShouldGenerateCorrectNickNameForStaffWithSinglePosition()
+    {
+        $member = new Member($this->ivaoUser([
+            'firstName' => 'Ciclano da Silva',
+            'userStaffPositions' => $this->staffPositions('ZZ-WM'),
+        ]));
+        $this->assertEquals('Ciclano | ZZ-WM', $member->generateNickname());
     }
 
-    public function testShouldGenerateCorrectNickNameForStaffWithMultiplePositions() {
-        $member = $this->generateMultiplePositionStaff();
-        $this->assertEquals($member->generateNickname(), 'Beltrano | ZZ-WM ZZ-DIR');
+    public function testShouldGenerateCorrectNickNameForStaffWithMultiplePositions()
+    {
+        $member = new Member($this->ivaoUser([
+            'firstName' => 'Beltrano da Silva',
+            'userStaffPositions' => $this->staffPositions('ZZ-WM', 'ZZ-DIR'),
+        ]));
+        $this->assertEquals('Beltrano | ZZ-WM ZZ-DIR', $member->generateNickname());
     }
 
-    public function testShouldCertifyThatReadNormalMemberCorrectly(){
-        $member = $this->generateNormalMember();
+    public function testShouldCertifyThatReadNormalMemberCorrectly()
+    {
+        $member = new Member($this->ivaoUser());
         $this->assertFalse($member->isStaff());
+        $this->assertSame('123456', $member->getVid());
+        $this->assertSame('BR', $member->getDivision());
     }
 
-    public function testShouldCertifyThatReadStaffMemberCorrectly() {
-        $member = $this->generateSinglePositionStaff();
+    public function testShouldCertifyThatReadStaffMemberCorrectly()
+    {
+        $member = new Member($this->ivaoUser(['userStaffPositions' => $this->staffPositions('BR-WM')]));
         $this->assertTrue($member->isStaff());
+        $this->assertEquals(['BR-WM'], $member->getStaff()->all());
+    }
+
+    public function testShouldSumPilotAndAtcHoursOnly()
+    {
+        $member = new Member($this->ivaoUser());
+        $this->assertEquals(3, $member->getTotalHours());
+    }
+
+    public function testShouldTreatMissingHoursAsZero()
+    {
+        $member = new Member($this->ivaoUser(['hours' => []]));
+        $this->assertEquals(0, $member->getTotalHours());
+    }
+
+    public function testShouldReadAccountStatusFromNetworkRating()
+    {
+        $this->assertTrue((new Member($this->ivaoUser()))->isActive());
+
+        $suspended = new Member($this->ivaoUser(['rating' => ['networkRating' => ['id' => Member::STATUS_SUSPENDED]]]));
+        $this->assertTrue($suspended->isSuspended());
+        $this->assertFalse($suspended->isActive());
+
+        $inactive = new Member($this->ivaoUser(['rating' => ['networkRating' => ['id' => Member::STATUS_INACTIVE]]]));
+        $this->assertTrue($inactive->isInactive());
+        $this->assertSame('inactive', $inactive->getAccountStatusReason());
     }
 }

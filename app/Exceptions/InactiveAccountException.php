@@ -21,7 +21,6 @@ class InactiveAccountException extends Exception
 
     public function render($request)
     {
-        // Use the appropriate translation key based on the reason
         $translationKey = 'text.accountSuspendedException';
         
         if ($this->reason === 'inactive') {

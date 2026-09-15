@@ -12,28 +12,26 @@ use App\Infrastructure\Services\ConsentmentService;
 use App\Infrastructure\Services\DiscordGuildService;
 use App\Infrastructure\Services\IVAOApiService;
 use App\Infrastructure\Services\RolesService;
-use Illuminate\Support\Facades\Http;
+use App\Infrastructure\Socialite\IVAOProvider;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
-use App\Domain\Entities\Member;
-use RestCord\DiscordClient;
+use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
+use SocialiteProviders\Discord\DiscordExtendSocialite;
+use SocialiteProviders\Manager\SocialiteWasCalled;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     *
-     * @return void
-     */
-    public function register()
+    public function register(): void
     {
-        $this->app->bind(IVAOApiServiceContract::class, function($app) {
-           return new IVAOApiService(new Http());
-        });
+        $this->app->bind(IVAOApiServiceContract::class, IVAOApiService::class);
 
         $this->app->bind(DiscordIVAOAuthServiceInterface::class, DiscordIVAOAuthService::class);
 
-        $this->app->bind(GuildServiceContract::class, function($app) {
-            return new DiscordGuildService(new DiscordClient(['token' => env('DISCORD_BOT_TOKEN')]), env('DISCORD_GUILD_ID'));
+        $this->app->bind(GuildServiceContract::class, function () {
+            return new DiscordGuildService(
+                config('services.discord.bot_token'),
+                config('services.discord.guild_id')
+            );
         });
 
         $this->app->bind(RolesServiceContract::class, RolesService::class);
@@ -41,13 +39,19 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ConsentmentServiceContract::class, ConsentmentService::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     *
-     * @return void
-     */
-    public function boot()
+    public function boot(): void
     {
-        //
+        Event::listen(SocialiteWasCalled::class, [DiscordExtendSocialite::class, 'handle']);
+
+        $this->app->make(SocialiteFactory::class)->extend('ivao', function ($app) {
+            $config = $app['config']['services.ivao'];
+
+            return (new IVAOProvider(
+                $app['request'],
+                $config['client_id'],
+                $config['client_secret'],
+                $config['redirect']
+            ))->setScopes(array_filter(explode(' ', $config['scopes'])));
+        });
     }
 }
