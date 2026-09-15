@@ -136,7 +136,7 @@ class AuthFlowTest extends TestCase
         Http::assertSent(fn (Request $r) => $r->method() === 'PUT' && $r->url() === $base
             && $r['access_token'] === 'discord-user-token'
             && $r->hasHeader('Authorization', 'Bot bot-token'));
-        Http::assertSent(fn (Request $r) => $r->method() === 'PUT' && $r->url() === "$base/roles/900");
+        Http::assertSent(fn (Request $r) => $r->method() === 'PUT' && $r->url() === "$base/roles/900" && $r->body() === '');
         Http::assertSent(fn (Request $r) => $r->method() === 'PUT' && $r->url() === "$base/roles/901");
         Http::assertNotSent(fn (Request $r) => $r->url() === "$base/roles/902");
         Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r->url() === $base && $r['nick'] === 'Fulano | BR-WM');
@@ -147,6 +147,42 @@ class AuthFlowTest extends TestCase
         $this->assertSame('Webmaster:Membro', $consentment->roles);
         $this->assertSame('BR', $consentment->division);
         $this->assertEquals(1, $consentment->status);
+    }
+
+    public function test_member_above_the_bot_still_joins_without_nickname_and_role_changes()
+    {
+        $this->saveRoleRules([['hash' => 'a', 'id' => ['900'], 'sulfix' => 'BR-WM']]);
+
+        $missingPermissions = Http::response(['message' => 'Missing Permissions', 'code' => 50013], 403);
+        Http::fake([
+            'discord.com/api/v10/guilds/'.self::GUILD.'/roles' => Http::response([['id' => '900', 'name' => 'Webmaster']]),
+            'discord.com/api/v10/guilds/'.self::GUILD.'/members/555/roles/*' => $missingPermissions,
+            'discord.com/api/v10/guilds/'.self::GUILD.'/members/555' => fn (Request $r) => $r->method() === 'PATCH'
+                ? $missingPermissions
+                : Http::response(null, 204),
+        ]);
+
+        $this->mockSocialite('discord', (new SocialiteUser)->setToken('t')->map(['id' => '555']));
+
+        $this->withSession(['IVAO_USER' => $this->ivaoUser()])
+            ->get('/discord/callback?code=abc&state=xyz')
+            ->assertRedirect('/success');
+
+        $this->assertSame('555', ConsentmentModel::sole()->discordId);
+    }
+
+    public function test_discord_errors_other_than_missing_permissions_still_refuse()
+    {
+        $this->saveRoleRules([['hash' => 'a', 'id' => ['900'], 'sulfix' => 'BR-WM']]);
+        Http::fake(['discord.com/api/v10/*' => Http::response(['message' => 'Unknown Guild', 'code' => 10004], 404)]);
+        $this->mockSocialite('discord', (new SocialiteUser)->setToken('t')->map(['id' => '555']));
+
+        $this->withSession(['IVAO_USER' => $this->ivaoUser()])
+            ->get('/discord/callback?code=abc&state=xyz')
+            ->assertOk()
+            ->assertSee(__('text.invalidPermissionException'));
+
+        $this->assertSame(0, ConsentmentModel::count());
     }
 
     public function test_member_without_enough_hours_is_refused()

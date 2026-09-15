@@ -11,6 +11,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class DiscordGuildService implements GuildServiceContract
 {
@@ -38,15 +39,19 @@ class DiscordGuildService implements GuildServiceContract
         ]);
 
         $member->getRoles()->each(function ($role) use ($member, $guild) {
-            $this->addRoleToMember($member, $role, $guild);
+            $this->skipWhenAboveBot($member, "role {$role->getId()}", function () use ($member, $role, $guild) {
+                $this->addRoleToMember($member, $role, $guild);
+            });
         });
 
-        $this->changeMemberNickname($member, $guild);
+        $this->skipWhenAboveBot($member, 'nickname', function () use ($member, $guild) {
+            $this->changeMemberNickname($member, $guild);
+        });
     }
 
     private function addRoleToMember(Member $member, Roles $role, Guild $guild)
     {
-        $this->discord()->put("/guilds/{$guild->getId()}/members/{$member->getDiscordId()}/roles/{$role->getId()}");
+        $this->discord()->send('PUT', "/guilds/{$guild->getId()}/members/{$member->getDiscordId()}/roles/{$role->getId()}");
     }
 
     private function changeMemberNickname(Member $member, Guild $guild)
@@ -54,6 +59,24 @@ class DiscordGuildService implements GuildServiceContract
         $this->discord()->patch("/guilds/{$guild->getId()}/members/{$member->getDiscordId()}", [
             'nick' => $member->generateNickname(),
         ]);
+    }
+
+    // Discord refuses changes to members whose top role is above the bot's (and to the server owner)
+    private function skipWhenAboveBot(Member $member, string $change, callable $callback)
+    {
+        try {
+            $callback();
+        } catch (RequestException $e) {
+            if ($e->response->status() !== 403) {
+                throw $e;
+            }
+
+            Log::warning([
+                'event' => 'discord.missing.permissions',
+                'user' => $member->generateNickname(),
+                'change' => $change,
+            ]);
+        }
     }
 
     public function getServerRoles(Guild $guild)
