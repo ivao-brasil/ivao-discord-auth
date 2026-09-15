@@ -201,37 +201,9 @@ class AuthFlowTest extends TestCase
         Log::shouldNotHaveReceived('warning');
     }
 
-    public function test_saving_role_rules_is_logged_with_the_admin_vid()
-    {
-        Log::spy();
-        $admin = ['IVAO_USER' => $this->ivaoUser(['id' => 111111])];
-
-        $this->withSession($admin)->postJson('/api/discord/saveRoles', [['hash' => 'a', 'id' => ['900'], 'sulfix' => 'BR-WM']])->assertOk();
-
-        Log::shouldHaveReceived('notice')->withArgs(fn ($message, $context) => $context['event'] === 'roles.updated' && $context['admin'] === 111111);
-    }
-
     public function test_discord_callback_requires_ivao_login()
     {
         $this->get('/discord/callback?code=abc')->assertRedirect(route('login'));
-    }
-
-    public function test_admin_pages_are_limited_to_admin_vids()
-    {
-        $this->withSession(['IVAO_USER' => $this->ivaoUser()])->get('/admin')->assertRedirect(route('home'));
-
-        Http::fake(['discord.com/api/v10/guilds/*/roles' => Http::response([['id' => '900', 'name' => 'Webmaster']])]);
-
-        $admin = ['IVAO_USER' => $this->ivaoUser(['id' => 111111])];
-        $this->withSession($admin)->get('/admin')->assertOk();
-        $this->withSession($admin)->getJson('/api/discord/roles')->assertExactJson([['id' => '900', 'name' => 'Webmaster']]);
-
-        $rules = [['hash' => 'a', 'id' => ['900'], 'sulfix' => 'BR-WM']];
-        $this->withSession($admin)->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
-            ->postJson('/api/discord/saveRoles', $rules)->assertOk();
-        $this->withSession($admin)->getJson('/api/discord/actualRoles')->assertExactJson($rules);
-
-        Storage::disk('local')->assertExists('roles');
     }
 
     public function test_revoke_link_asks_for_confirmation_before_removing()

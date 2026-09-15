@@ -5,7 +5,7 @@ return [
     'authInstruction' => 'Por favor, use el botón abajo para autenticar tu cuenta de discord y unirse a nuestro servidor',
     'noAccount' => '¿No tienes una cuenta?',
     'createAccount' => 'Créala ya',
-    'loginBtn' => 'Login',
+    'loginBtn' => 'Entrar con Discord',
     'generalException' => 'Ooops! Hemos tenido un problema',
     'invalidTokenException' => 'Esta página no tiene permiso para usar IVAO Login API',
     'invalidPermissionException' => 'No tienes permiso para acceder a este servidor',
@@ -34,5 +34,9 @@ return [
     'syncNickname' => 'Nuevo apodo: :nickname',
     'syncSkipped' => 'Algunos cambios no se hicieron porque tu rol está por encima del bot.',
     'syncFailed' => 'No fue posible sincronizar ahora. Intenta más tarde.',
-    'syncUnknownCommand' => 'Comando desconocido.'
+    'syncUnknownCommand' => 'Comando desconocido.',
+    'openDiscord' => 'Abrir el servidor',
+    'backHome' => 'Volver al inicio',
+    'consentTitle' => 'Declaración de consentimiento',
+    'close' => 'Cerrar'
 ];
