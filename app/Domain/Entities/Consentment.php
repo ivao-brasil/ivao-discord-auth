@@ -10,6 +10,7 @@ class Consentment
 {
     private $userVid;
     private $discordId;
+    private $firstName;
     private $nickName;
     private $roles;
     private $division;
@@ -19,6 +20,7 @@ class Consentment
     {
         $this->userVid = $data['userVid'];
         $this->discordId = $data['discordId'];
+        $this->firstName = $data['firstName'] ?? null;
         $this->nickName = $data['nickName'];
         $this->roles = $data['roles'];
         $this->division = $data['division'];
@@ -29,6 +31,7 @@ class Consentment
         return [
             'userVid' => $this->userVid,
             'discordId' => $this->discordId,
+            'firstName' => $this->firstName,
             'nickName' => $this->nickName,
             'roles' => $this->roles,
             'division' => $this->division,

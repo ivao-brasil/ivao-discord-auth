@@ -11,6 +11,7 @@ class ConsentmentModel extends Model
     protected $fillable = [
         "userVid",
         "discordId",
+        "firstName",
         "nickName",
         "roles",
         "division",

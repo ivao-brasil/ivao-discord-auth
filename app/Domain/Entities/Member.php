@@ -180,11 +180,13 @@ class Member
     }
 
     /**
-     * The nickname for this member, or null when IVAO does not expose their name.
+     * The nickname for this member, or null when neither IVAO nor the given name is available.
+     *
+     * @param  string|null  $knownFirstName  name kept from the member's last login
      */
-    public function generateNickname(): ?string
+    public function generateNickname(?string $knownFirstName = null): ?string
     {
-        $firstName = explode(' ', trim($this->firstName))[0];
+        $firstName = explode(' ', trim($this->firstName ?: (string) $knownFirstName))[0];
 
         if ($firstName === '') {
             return null;
