@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Infrastructure\Http\Controllers\DiscordInteractionController;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -23,6 +24,14 @@ class RegisterDiscordCommands extends Command
                     'name' => 'sync',
                     'type' => 1,
                     'description' => __('text.syncCommandDescription'),
+                    'options' => [
+                        [
+                            'name' => DiscordInteractionController::OPTION_EVERYONE,
+                            'type' => 5,
+                            'description' => __('text.syncEveryoneOptionDescription'),
+                            'required' => false,
+                        ],
+                    ],
                 ],
             ]);
 

@@ -39,6 +39,8 @@ document.addEventListener('alpine:init', () => {
         search: '',
         statusFilter: null,
 
+        syncQueued: false,
+
         sheet: null,
         sheetError: null,
         busy: false,
@@ -155,6 +157,16 @@ document.addEventListener('alpine:init', () => {
             }
 
             return format(this.t.sync.summary, lastSync) + (lastSync.failed ? format(this.t.sync.failed, lastSync) : '');
+        },
+
+        async syncEveryone() {
+            try {
+                await this.request('POST', '/api/admin/sync');
+                this.syncQueued = true;
+                this.notify(this.t.sync.queuedToast);
+            } catch (error) {
+                this.notify(error.message);
+            }
         },
 
         role(id) {

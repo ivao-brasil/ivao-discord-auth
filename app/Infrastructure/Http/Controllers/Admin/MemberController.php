@@ -104,6 +104,18 @@ class MemberController extends Controller
         ]);
     }
 
+    /**
+     * Asks the scheduler to sync every linked member on its next run.
+     */
+    public function syncAll(): JsonResponse
+    {
+        $this->sync->requestFullRun();
+
+        Log::notice('Full sync requested', ['event' => 'admin.sync.requested']);
+
+        return response()->json(['queued' => true]);
+    }
+
     public function sync(ConsentmentModel $account): JsonResponse
     {
         try {

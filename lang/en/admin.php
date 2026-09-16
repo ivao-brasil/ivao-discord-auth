@@ -50,6 +50,9 @@ return [
     ],
 
     'sync' => [
+        'runNow' => 'Sync everyone',
+        'queued' => 'Scheduled',
+        'queuedToast' => 'A sync of every member is scheduled. It starts within a minute.',
         'never' => 'The automatic sync has not run yet',
         'schedule' => 'Runs every day at :time.',
         'last' => 'Last sync on :date',

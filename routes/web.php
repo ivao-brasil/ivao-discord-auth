@@ -27,6 +27,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('roles', DiscordRoleController::class);
         Route::get('rules', [RuleController::class, 'index']);
         Route::put('rules', [RuleController::class, 'update']);
+        Route::post('sync', [MemberController::class, 'syncAll']);
         Route::get('members', [MemberController::class, 'index']);
         Route::get('members/{account}', [MemberController::class, 'show']);
         Route::post('members/{account}/sync', [MemberController::class, 'sync']);

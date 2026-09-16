@@ -17,6 +17,21 @@ class MemberSyncService
 {
     public const LAST_RUN_CACHE_KEY = 'discord.sync.last_run';
 
+    public const REQUESTED_CACHE_KEY = 'discord.sync.requested';
+
+    /**
+     * Asks the scheduler to sync every member on its next run, within a minute.
+     */
+    public function requestFullRun(): void
+    {
+        Cache::put(self::REQUESTED_CACHE_KEY, true, now()->addHour());
+    }
+
+    public function fullRunWasRequested(): bool
+    {
+        return (bool) Cache::pull(self::REQUESTED_CACHE_KEY);
+    }
+
     private $directory;
     private $guildService;
     private $consentments;

@@ -50,6 +50,9 @@ return [
     ],
 
     'sync' => [
+        'runNow' => 'Sincronizar todos',
+        'queued' => 'Agendada',
+        'queuedToast' => 'Sincronização de todos os membros agendada. Começa em até um minuto.',
         'never' => 'A sincronização automática ainda não rodou',
         'schedule' => 'Roda todos os dias às :time.',
         'last' => 'Última sincronização em :date',

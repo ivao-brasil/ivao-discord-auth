@@ -4,6 +4,7 @@ namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Sync\MemberSyncService;
 use App\Application\Sync\SyncResult;
+use App\ConsentmentModel;
 use App\Domain\Contracts\ConsentmentServiceContract;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Entities\Guild;
@@ -22,6 +23,8 @@ class DiscordInteractionController extends Controller
     private const RESPONSE_DEFERRED_MESSAGE = 5;
 
     private const FLAG_EPHEMERAL = 64;
+
+    public const OPTION_EVERYONE = 'todos';
 
     private $sync;
     private $consentments;
@@ -56,6 +59,10 @@ class DiscordInteractionController extends Controller
             return $this->reply(__('text.syncNotLinked', ['url' => config('app.url')]));
         }
 
+        if ($this->wantsEveryone($request)) {
+            return $this->syncEveryone($account);
+        }
+
         $cooldown = now()->addMinutes(config('brauth.sync.cooldown_minutes'));
         if (! Cache::add("discord.sync.cooldown.{$discordId}", true, $cooldown)) {
             return $this->reply(__('text.syncCooldown', ['minutes' => config('brauth.sync.cooldown_minutes')]));
@@ -79,6 +86,26 @@ class DiscordInteractionController extends Controller
             'type' => self::RESPONSE_DEFERRED_MESSAGE,
             'data' => ['flags' => self::FLAG_EPHEMERAL],
         ]);
+    }
+
+    private function wantsEveryone(Request $request): bool
+    {
+        $option = collect($request->input('data.options', []))->firstWhere('name', self::OPTION_EVERYONE);
+
+        return (bool) ($option['value'] ?? false);
+    }
+
+    private function syncEveryone(ConsentmentModel $account): JsonResponse
+    {
+        if (! in_array((string) $account->userVid, config('brauth.admin_vids'), true)) {
+            return $this->reply(__('text.syncEveryoneNotAllowed'));
+        }
+
+        $this->sync->requestFullRun();
+
+        Log::notice('Full sync requested', ['event' => 'sync.requested', 'vid' => $account->userVid]);
+
+        return $this->reply(__('text.syncEveryoneQueued'));
     }
 
     private function describe(SyncResult $result): string
