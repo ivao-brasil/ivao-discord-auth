@@ -35,6 +35,18 @@ class MemberEntityTest extends TestCase
         $this->assertEquals('Fulano - 123456', $member->generateNickname());
     }
 
+    public function testShouldNotGenerateNickNameWhenIVAODoesNotExposeTheName()
+    {
+        $member = new Member($this->ivaoUser(['firstName' => null, 'userStaffPositions' => []]));
+        $this->assertNull($member->generateNickname());
+    }
+
+    public function testShouldNotGenerateNickNameForStaffWithoutAName()
+    {
+        $member = new Member($this->ivaoUser(['firstName' => null]));
+        $this->assertNull($member->generateNickname());
+    }
+
     public function testShouldGenerateCorrectNickNameForStaffWithSinglePosition()
     {
         $member = new Member($this->ivaoUser([

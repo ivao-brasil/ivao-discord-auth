@@ -43,7 +43,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
         $consentment = new Consentment([
             'userVid' => $member->getVid(),
             'discordId' => $member->getDiscordId(),
-            'nickName' => $member->generateNickname(),
+            'nickName' => $member->generateNickname() ?? '',
             'roles' => $roles,
             'status' => true,
             'division' => $member->getDivision()
