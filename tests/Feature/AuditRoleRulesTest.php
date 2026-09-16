@@ -32,7 +32,14 @@ class AuditRoleRulesTest extends TestCase
 
     private function fakeIvao(array $positions): void
     {
+        config(['services.discord.bot_token' => 'bot-token', 'services.discord.guild_id' => '348405205890498580']);
+
         Http::fake([
+            'discord.com/api/v10/guilds/*/roles' => Http::response([
+                ['id' => '100', 'name' => 'Operações Especiais'],
+                ['id' => '200', 'name' => 'Eventos'],
+                ['id' => '300', 'name' => 'Staff'],
+            ]),
             'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
             'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions($positions)),
             'api.ivao.aero/v2/staffPositions*' => Http::response(['pages' => 1, 'items' => [
@@ -43,6 +50,17 @@ class AuditRoleRulesTest extends TestCase
                 ['id' => 'WD6', 'name' => 'Web Developer', 'departmentTeam' => ['department' => ['name' => 'Development Operations']]],
             ]]),
         ]);
+    }
+
+    public function test_a_rule_without_a_name_is_shown_by_its_discord_roles()
+    {
+        $this->account('123456', '555');
+        $this->saveRoleRules([['id' => 'r1', 'roles' => ['100', '300'], 'staff' => ['BR-SOC']]]);
+        $this->fakeIvao([['userId' => 123456, 'id' => 'BR-SOA2', 'connectAs' => 'BR-SOA2', 'onTrial' => false]]);
+
+        $this->artisan('discord:audit-rules')
+            ->expectsOutputToContain('"Operações Especiais + Staff"')
+            ->assertSuccessful();
     }
 
     public function test_it_reports_a_position_no_rule_covers()

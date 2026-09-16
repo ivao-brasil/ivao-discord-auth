@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\ConsentmentModel;
 use App\Domain\Contracts\ConsentmentServiceContract;
+use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Contracts\IVAOUserDirectoryContract;
 use App\Domain\Contracts\RolesServiceContract;
+use App\Domain\Entities\Guild;
 use App\Domain\Entities\RoleRule;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -25,7 +27,8 @@ class AuditRoleRules extends Command
     public function handle(
         RolesServiceContract $roles,
         IVAOUserDirectoryContract $directory,
-        ConsentmentServiceContract $consentments
+        ConsentmentServiceContract $consentments,
+        GuildServiceContract $guildService
     ): int {
         $rules = $roles->rules();
 
@@ -34,6 +37,11 @@ class AuditRoleRules extends Command
 
             return self::FAILURE;
         }
+
+        // Rules written in the old format carry no name, so they are shown by their roles
+        $roleNames = Collection::make($guildService->getServerRoles(Guild::FromService($guildService)))
+            ->pluck('name', 'id')
+            ->all();
 
         $catalogue = $directory->staffPositionCatalogue();
         $network = $directory->staffPositions();
@@ -85,7 +93,7 @@ class AuditRoleRules extends Command
                 $vids->count(),
                 $candidates->isEmpty()
                     ? 'no rule covers '.($department ?: 'this department')
-                    : $candidates->map(fn (RoleRule $rule) => '"'.$rule->getName().'"')->join(', ')
+                    : $candidates->map(fn (RoleRule $rule) => '"'.$this->label($rule, $roleNames).'"')->join(', ')
             ));
 
             foreach ($candidates as $candidate) {
@@ -115,6 +123,16 @@ class AuditRoleRules extends Command
         $this->info("Added {$added} position(s) to ".count($additions).' rule(s).');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @param  array<string, string>  $roleNames
+     */
+    private function label(RoleRule $rule, array $roleNames): string
+    {
+        return $rule->getName() !== ''
+            ? $rule->getName()
+            : $rule->getRoles()->map(fn (string $role) => $roleNames[$role] ?? $role)->join(' + ');
     }
 
     /**
