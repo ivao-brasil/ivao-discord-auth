@@ -315,4 +315,16 @@ class MemberSyncTest extends TestCase
     {
         $this->artisan('discord:sync 999999')->assertFailed();
     }
+    public function test_dry_run_lists_the_changes_without_touching_discord()
+    {
+        $this->account();
+        $this->fakeApis(Http::response($this->ivaoUser()), ['roles' => ['777'], 'nick' => 'Apelido antigo']);
+
+        $this->artisan('discord:sync --dry-run')
+            ->expectsOutputToContain('Nothing was sent to Discord.')
+            ->assertSuccessful();
+
+        Http::assertNotSent(fn (Request $r) => in_array($r->method(), ['PUT', 'PATCH', 'DELETE']));
+    }
+
 }

@@ -10,12 +10,18 @@ use Illuminate\Console\Command;
 
 class SyncDiscordMembers extends Command
 {
-    protected $signature = 'discord:sync {vid? : Sync only the accounts linked to this VID}';
+    protected $signature = 'discord:sync
+        {vid? : Sync only the accounts linked to this VID}
+        {--dry-run : List what would change without touching Discord}';
 
     protected $description = 'Update Discord roles and nicknames of linked members from their IVAO data';
 
     public function handle(MemberSyncService $sync, ConsentmentServiceContract $consentments): int
     {
+        if ($this->option('dry-run')) {
+            return $this->preview($sync, $consentments);
+        }
+
         if ($vid = $this->argument('vid')) {
             $accounts = $consentments->getActiveAccounts($vid);
 
@@ -43,6 +49,65 @@ class SyncDiscordMembers extends Command
         }
 
         return $summary['failed'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Walks the same accounts as a real run and prints the changes it would make.
+     */
+    private function preview(MemberSyncService $sync, ConsentmentServiceContract $consentments): int
+    {
+        $accounts = ($vid = $this->argument('vid'))
+            ? $consentments->getActiveAccounts($vid)
+            : $consentments->allActive();
+
+        $counts = ['checked' => 0, 'changed' => 0, 'away' => 0, 'unverified' => 0, 'failed' => 0, 'roles' => 0, 'nicknames' => 0];
+
+        foreach ($accounts as $account) {
+            $counts['checked']++;
+
+            try {
+                $plan = $sync->plan($account);
+            } catch (\Throwable $e) {
+                $counts['failed']++;
+                $this->error("{$account->userVid}: {$e->getMessage()}");
+
+                continue;
+            }
+
+            if ($plan->isAway()) {
+                $counts['away']++;
+
+                continue;
+            }
+
+            if ($plan->unverified) {
+                $counts['unverified']++;
+
+                continue;
+            }
+
+            if (! $plan->hasChanges()) {
+                continue;
+            }
+
+            $counts['changed']++;
+            $counts['roles'] += count($plan->add) + count($plan->remove);
+            $counts['nicknames'] += $plan->nickname ? 1 : 0;
+
+            $this->line(sprintf(
+                '%s: +[%s] -[%s]%s',
+                $account->userVid,
+                implode(', ', $plan->add),
+                implode(', ', $plan->remove),
+                $plan->nickname ? " nickname \"{$plan->nickname}\"" : ''
+            ));
+        }
+
+        $this->newLine();
+        $this->info("Would change {$counts['changed']} of {$counts['checked']} members: {$counts['roles']} role changes, {$counts['nicknames']} nicknames.");
+        $this->info("Away {$counts['away']}, unverified {$counts['unverified']}, failed {$counts['failed']}. Nothing was sent to Discord.");
+
+        return self::SUCCESS;
     }
 
     private function report(ConsentmentModel $account, SyncResult $result): void
