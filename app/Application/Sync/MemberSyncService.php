@@ -144,9 +144,10 @@ class MemberSyncService
      */
     public function syncAll(?callable $progress = null): array
     {
-        $summary = ['checked' => 0, 'updated' => 0, 'away' => 0, 'failed' => 0, 'removed' => 0];
+        $summary = ['checked' => 0, 'updated' => 0, 'away' => 0, 'failed' => 0, 'removed' => 0, 'renamed' => 0];
         $statuses = [];
         $maxRemovals = max(1, (int) config('brauth.sync.max_removals'));
+        $maxRenames = max(1, (int) config('brauth.sync.max_renames'));
         $batchSize = max(1, (int) config('brauth.sync.batch_size'));
 
         foreach ($this->consentments->allActive()->chunk($batchSize) as $batch) {
@@ -161,6 +162,7 @@ class MemberSyncService
                     $summary['updated'] += $result->hasChanges() ? 1 : 0;
                     $summary['away'] += $result->status === SyncResult::AWAY ? 1 : 0;
                     $summary['removed'] += count($result->removed);
+                    $summary['renamed'] += $result->nickname === null ? 0 : 1;
                     $progress && $progress($account, $result, null);
                 } catch (\Throwable $e) {
                     $statuses[$account->id] = SyncStatusStore::FAILED;
@@ -169,11 +171,11 @@ class MemberSyncService
                     $progress && $progress($account, null, $e);
                 }
 
-                // Taking roles from this many members at once is a sign of bad data, not
-                // of that many members losing them on the same day
-                if ($summary['removed'] > $maxRemovals) {
+                // Touching this many members at once is a sign of bad data, not of that
+                // many members changing position or losing a role on the same day
+                if ($summary['removed'] > $maxRemovals || $summary['renamed'] > $maxRenames) {
                     $summary['aborted'] = true;
-                    Log::critical('Discord sync stopped after too many role removals', [
+                    Log::critical('Discord sync stopped after too many changes', [
                         'event' => 'sync.aborted',
                     ] + $summary);
                     break 2;
