@@ -11,6 +11,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\IvaoFixtures;
 use Tests\TestCase;
@@ -112,18 +113,42 @@ class MemberSyncTest extends TestCase
         Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH');
     }
 
-    public function test_stored_name_is_used_when_ivao_hides_it()
+    public function test_a_hidden_profile_keeps_its_nickname_and_staff_roles()
     {
         $account = $this->account();
         $account->update(['firstName' => 'Fulano']);
+
+        // IVAO hides the name and the staff positions of a private profile, so the
+        // answer cannot be read as "this member is not staff anymore"
         $this->fakeApis(
-            Http::response($this->ivaoUser(['firstName' => null, 'userStaffPositions' => [['id' => 'BR-WM', 'connectAs' => 'BR-WM', 'onTrial' => false]]])),
-            ['roles' => ['900'], 'nick' => 'Fulano - 123456']
+            Http::response($this->ivaoUser(['firstName' => null, 'lastName' => null, 'userStaffPositions' => []])),
+            ['roles' => ['900', '901'], 'nick' => 'Fulano | BR-WM']
         );
 
         $result = app(MemberSyncService::class)->sync($account);
 
-        $this->assertSame('Fulano | BR-WM', $result->nickname);
+        $this->assertSame([], $result->removed);
+        $this->assertNull($result->nickname);
+        Http::assertNotSent(fn (Request $r) => in_array($r->method(), ['DELETE', 'PATCH']));
+    }
+
+    public function test_a_hidden_profile_still_loses_roles_it_cannot_qualify_for()
+    {
+        $account = $this->account();
+        $this->saveRoleRules([
+            ['id' => 'web', 'roles' => ['900'], 'staff' => ['BR-WM']],
+            ['id' => 'pilots', 'roles' => ['901'], 'minPilotRating' => 10],
+        ]);
+
+        $this->fakeApis(
+            Http::response($this->ivaoUser(['firstName' => null, 'userStaffPositions' => []])),
+            ['roles' => ['900', '901'], 'nick' => 'Fulano | BR-WM']
+        );
+
+        $result = app(MemberSyncService::class)->sync($account);
+
+        // 900 comes from a staff rule and stays, 901 depends on the rating, which is visible
+        $this->assertSame(['901'], $result->removed);
     }
 
     public function test_the_name_from_ivao_is_kept_for_later_runs()
@@ -150,12 +175,42 @@ class MemberSyncTest extends TestCase
         Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH');
     }
 
-    public function test_deleted_ivao_account_loses_managed_roles()
+    public function test_a_run_that_removes_roles_from_too_many_members_stops()
+    {
+        config(['brauth.sync.max_removals' => 2]);
+
+        foreach (range(1, 6) as $i) {
+            ConsentmentModel::create([
+                'userVid' => "12345{$i}", 'discordId' => '555', 'nickName' => 'x',
+                'roles' => '', 'division' => 'BR', 'status' => true,
+            ]);
+        }
+
+        // Everyone is suspended, so every member would lose the managed roles
+        $this->fakeApis(
+            Http::response($this->ivaoUser(['rating' => ['networkRating' => ['id' => Member::STATUS_SUSPENDED]]])),
+            ['roles' => ['900', '901'], 'nick' => null]
+        );
+
+        Log::spy();
+
+        $summary = app(MemberSyncService::class)->syncAll();
+
+        $this->assertTrue($summary['aborted']);
+        $this->assertLessThan(6, $summary['checked']);
+        Log::shouldHaveReceived('critical')->once();
+    }
+
+    public function test_an_account_ivao_does_not_answer_for_keeps_everything()
     {
         $account = $this->account();
         $this->fakeApis(Http::response(['error' => 'not_found'], 404), ['roles' => ['900'], 'nick' => null]);
 
-        $this->assertSame(['900'], app(MemberSyncService::class)->sync($account)->removed);
+        $result = app(MemberSyncService::class)->sync($account);
+
+        $this->assertSame(SyncResult::UNVERIFIED, $result->status);
+        $this->assertSame([], $result->removed);
+        Http::assertNotSent(fn (Request $r) => in_array($r->method(), ['PUT', 'DELETE', 'PATCH']));
     }
 
     public function test_ivao_outage_changes_nothing()

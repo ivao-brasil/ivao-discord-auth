@@ -36,6 +36,12 @@ class SyncDiscordMembers extends Command
 
         $this->info("Checked {$summary['checked']}, updated {$summary['updated']}, away {$summary['away']}, failed {$summary['failed']}.");
 
+        if ($summary['aborted'] ?? false) {
+            $this->error("Stopped after removing roles from {$summary['removed']} members. Check the data before running it again.");
+
+            return self::FAILURE;
+        }
+
         return $summary['failed'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
@@ -43,6 +49,8 @@ class SyncDiscordMembers extends Command
     {
         if ($result->status === SyncResult::AWAY) {
             $this->line("{$account->userVid}: not in the server");
+        } elseif ($result->status === SyncResult::UNVERIFIED) {
+            $this->line("{$account->userVid}: IVAO did not answer for this account, nothing changed");
         } elseif ($result->hasChanges()) {
             $this->line(sprintf(
                 '%s: +[%s] -[%s]%s',

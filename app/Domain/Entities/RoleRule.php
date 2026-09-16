@@ -125,6 +125,12 @@ class RoleRule
         return $this->roles;
     }
 
+    /** @return Collection<int, string> */
+    public function getStaff(): Collection
+    {
+        return $this->staff;
+    }
+
     public function toArray(): array
     {
         return [

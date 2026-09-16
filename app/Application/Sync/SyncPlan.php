@@ -17,7 +17,14 @@ class SyncPlan
         /** @var string[] Discord role ids */
         public readonly array $remove = [],
         public readonly ?string $nickname = null,
+        /** IVAO did not answer for this account, so nothing can be decided about it */
+        public readonly bool $unverified = false,
     ) {
+    }
+
+    public static function unverified(array $discordMember): self
+    {
+        return new self($discordMember, null, false, [], [], null, true);
     }
 
     public static function away(): self

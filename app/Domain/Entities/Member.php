@@ -206,6 +206,15 @@ class Member
         return mb_substr($nick, 0, self::NICKNAME_MAX_LENGTH);
     }
 
+    /**
+     * IVAO hides the name and the staff positions of members who keep their profile private,
+     * so what came back cannot be used to decide that someone is no longer staff.
+     */
+    public function hasHiddenProfile(): bool
+    {
+        return trim((string) $this->firstName) === '';
+    }
+
     public function isStaff()
     {
         return $this->staff->isNotEmpty();
