@@ -16,6 +16,9 @@ class DiscordGuildService implements GuildServiceContract
 {
     private const API_URL = 'https://discord.com/api/v10';
 
+    // Audit log entry for a nickname change, which keeps the value it had before
+    private const AUDIT_MEMBER_UPDATE = 24;
+
     private $botToken;
     private $guildId;
     private $applicationId;
@@ -135,6 +138,56 @@ class DiscordGuildService implements GuildServiceContract
 
             throw $e;
         }
+    }
+
+    /**
+     * The nickname each member had before it lost their name, read from the server audit
+     * log, which Discord keeps for 45 days.
+     *
+     * @return array<string, string> Discord id to the most recent nickname carrying a name
+     */
+    public function previousNicknames(Guild $guild, int $pages = 45): array
+    {
+        $entries = [];
+        $before = null;
+
+        for ($page = 0; $page < $pages; $page++) {
+            $batch = $this->discord()
+                ->get("/guilds/{$guild->getId()}/audit-logs", array_filter([
+                    'action_type' => self::AUDIT_MEMBER_UPDATE,
+                    'limit' => 100,
+                    'before' => $before,
+                ]))
+                ->json('audit_log_entries') ?? [];
+
+            if ($batch === []) {
+                break;
+            }
+
+            $entries = array_merge($entries, $batch);
+            $before = end($batch)['id'];
+        }
+
+        // Oldest first, so the most recent named nickname of each member is what remains
+        usort($entries, fn (array $a, array $b) => strcmp($a['id'], $b['id']));
+
+        $nicknames = [];
+
+        foreach ($entries as $entry) {
+            foreach ($entry['changes'] ?? [] as $change) {
+                if (($change['key'] ?? null) !== 'nick') {
+                    continue;
+                }
+
+                $previous = trim((string) ($change['old_value'] ?? ''));
+
+                if ($previous !== '' && ! str_starts_with($previous, '|') && ! str_starts_with($previous, '-')) {
+                    $nicknames[(string) $entry['target_id']] = $previous;
+                }
+            }
+        }
+
+        return $nicknames;
     }
 
     public function editInteractionResponse(string $interactionToken, string $content): void

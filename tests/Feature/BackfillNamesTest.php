@@ -51,6 +51,7 @@ class BackfillNamesTest extends TestCase
             ])),
             'api.ivao.aero/v2/users/123456' => Http::response($this->ivaoUser()),
             'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser(['firstName' => null])),
+            'discord.com/api/v10/guilds/'.self::GUILD.'/audit-logs*' => Http::response(['audit_log_entries' => []]),
             'discord.com/api/v10/guilds/'.self::GUILD.'/members/556' => Http::response(['nick' => 'Ciclano - 222222']),
             'discord.com/api/v10/guilds/'.self::GUILD.'/members/*' => Http::response(['nick' => null]),
             'discord.com/api/v10/guilds/'.self::GUILD.'/roles' => Http::response([]),
@@ -67,6 +68,49 @@ class BackfillNamesTest extends TestCase
         $this->assertNull($nameless->fresh()->firstName);
     }
 
+    public function test_it_takes_the_name_from_the_audit_log_when_nothing_else_has_it()
+    {
+        $staff = $this->account('444444', '558', '| BR-FOC');
+
+        Http::fake([
+            'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
+            'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions([
+                ['userId' => 444444, 'id' => 'BR-FOC', 'connectAs' => 'BR-FOC', 'onTrial' => false],
+            ])),
+            'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser(['firstName' => null])),
+            'discord.com/api/v10/guilds/'.self::GUILD.'/audit-logs*' => Http::sequence()
+                ->push(['audit_log_entries' => [[
+                    'id' => '2', 'target_id' => '558',
+                    'changes' => [['key' => 'nick', 'old_value' => 'Pedro | BR-TA11', 'new_value' => '| BR-FOC']],
+                ]]])
+                ->push(['audit_log_entries' => []]),
+            'discord.com/api/v10/guilds/'.self::GUILD.'/members/*' => Http::response(['nick' => '| BR-FOC']),
+            'discord.com/api/v10/guilds/'.self::GUILD.'/roles' => Http::response([]),
+        ]);
+
+        $this->artisan('discord:backfill-names')->assertSuccessful();
+
+        $this->assertSame('Pedro', $staff->fresh()->firstName);
+        // The position comes from the network list, not from the nickname the audit log kept
+        $this->assertSame('BR-FOC', $staff->fresh()->staffPositions);
+    }
+
+    public function test_no_audit_log_leaves_the_name_empty()
+    {
+        $staff = $this->account('444444', '558', '| BR-FOC');
+
+        Http::fake([
+            'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
+            'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions([])),
+            'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser(['firstName' => null])),
+            'discord.com/api/v10/guilds/'.self::GUILD.'/members/*' => Http::response(['nick' => '| BR-FOC']),
+        ]);
+
+        $this->artisan('discord:backfill-names --no-audit-log')->assertSuccessful();
+
+        $this->assertNull($staff->fresh()->firstName);
+    }
+
     public function test_dry_run_changes_nothing()
     {
         $account = $this->account('123456', '555', 'Fulano - 123456');
@@ -78,6 +122,7 @@ class BackfillNamesTest extends TestCase
                 ['userId' => 333333, 'id' => 'BR-DIR', 'connectAs' => 'BR-DIR', 'onTrial' => false],
             ])),
             'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser()),
+            'discord.com/api/v10/guilds/'.self::GUILD.'/audit-logs*' => Http::response(['audit_log_entries' => []]),
             'discord.com/api/v10/*' => Http::response(['nick' => null]),
         ]);
 
