@@ -30,6 +30,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('sync', [MemberController::class, 'syncAll']);
         Route::get('members', [MemberController::class, 'index']);
         Route::get('members/{account}', [MemberController::class, 'show']);
+        Route::put('members/{account}', [MemberController::class, 'update']);
         Route::post('members/{account}/sync', [MemberController::class, 'sync']);
         Route::delete('members/{account}', [MemberController::class, 'destroy']);
     });

@@ -83,6 +83,7 @@ class MemberController extends Controller
             'discordId' => $account->discordId,
             'linkedAt' => $account->created_at?->toIso8601String(),
             'status' => $this->statuses->get($account->id),
+            'kept' => ['firstName' => $account->firstName, 'staffPositions' => $account->staffPositions],
             'away' => $plan->isAway(),
             'discord' => $plan->isAway() ? null : [
                 'nickname' => $plan->discordMember['nick'] ?? $plan->discordMember['user']['username'] ?? null,
@@ -102,6 +103,33 @@ class MemberController extends Controller
                 'nickname' => $plan->nickname,
             ],
         ]);
+    }
+
+    /**
+     * Sets the name and the staff positions by hand, for members IVAO does not expose.
+     */
+    public function update(ConsentmentModel $account, Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'firstName' => ['nullable', 'string', 'max:64'],
+            'staffPositions' => ['nullable', 'string', 'max:512'],
+        ]);
+
+        $positions = preg_split('/[\s,;:]+/', mb_strtoupper((string) ($data['staffPositions'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
+
+        $account->update([
+            'firstName' => trim((string) ($data['firstName'] ?? '')) ?: null,
+            'staffPositions' => $positions ? implode(':', $positions) : null,
+        ]);
+
+        Log::info([
+            'event' => 'admin.member.updated',
+            'vid' => $account->userVid,
+            'firstName' => $account->firstName,
+            'staffPositions' => $account->staffPositions,
+        ]);
+
+        return response()->json(['firstName' => $account->firstName, 'staffPositions' => $account->staffPositions]);
     }
 
     /**

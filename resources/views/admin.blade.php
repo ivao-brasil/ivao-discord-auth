@@ -342,6 +342,24 @@
                         </template>
                     </div>
 
+                    <div class="section-header">{{ __('admin.members.kept') }}</div>
+                    <div class="group">
+                        <label class="row">
+                            <span class="row__title">{{ __('admin.members.keptName') }}</span>
+                            <input class="field" x-model="keptName" maxlength="64" placeholder="{{ __('admin.members.keptNamePlaceholder') }}">
+                        </label>
+                        <label class="row">
+                            <span class="row__title">{{ __('admin.members.keptPositions') }}</span>
+                            <input class="field" x-model="keptPositions" maxlength="512" autocapitalize="characters"
+                                   placeholder="{{ __('admin.members.keptPositionsPlaceholder') }}">
+                        </label>
+                        <div class="row" style="display: block">
+                            <p class="row__detail" style="margin: 0">{{ __('admin.members.keptHint') }}</p>
+                        </div>
+                        <button type="button" class="row row--center text-accent" @click="saveKept()"
+                                :disabled="busy || !keptChanged" x-text="busy ? t.members.saving : t.members.save"></button>
+                    </div>
+
                     <template x-if="!member.away">
                         <div>
                             <div class="section-header">{{ __('admin.members.nextSync') }}</div>
