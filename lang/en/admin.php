@@ -127,7 +127,7 @@ return [
     'errors' => [
         'generic' => 'Something went wrong. Please try again.',
         'unreachable' => 'IVAO or Discord could not be reached. Please try again in a few minutes.',
-        'rolesNotAssignable' => 'Some rules use roles that no longer exist or have administrator permission.',
+        'rolesNotAssignable' => 'These roles no longer exist or have administrator permission: :roles.',
         'ruleIncomplete' => 'Give the rule a name and choose at least one role.',
     ],
 ];

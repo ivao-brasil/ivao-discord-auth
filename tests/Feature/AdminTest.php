@@ -143,6 +143,20 @@ class AdminTest extends TestCase
         $this->assertFalse(Storage::disk('local')->exists('roles'));
     }
 
+    public function test_a_role_already_in_the_rules_does_not_block_a_save()
+    {
+        $this->fakeDiscord();
+        $this->saveRoleRules([['id' => 'x', 'name' => 'Antiga', 'roles' => ['910'], 'staff' => []]]);
+
+        $this->asAdmin()
+            ->putJson('/api/admin/rules', ['rules' => [
+                ['id' => 'x', 'name' => 'Antiga', 'roles' => ['910'], 'staff' => ['BR-WM']],
+            ]])
+            ->assertSuccessful();
+
+        $this->assertSame(['BR-WM'], app(RolesService::class)->rules()->first()->getStaff()->all());
+    }
+
     public function test_validates_rule_fields()
     {
         $this->asAdmin()
