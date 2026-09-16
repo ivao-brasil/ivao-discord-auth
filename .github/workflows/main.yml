@@ -45,6 +45,7 @@ jobs:
             .github/**
             tests/**
             docker/**
+            resources/lang/**
             storage/**
             .env*
             .editorconfig
