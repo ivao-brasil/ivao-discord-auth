@@ -37,8 +37,10 @@ class AuditRoleRulesTest extends TestCase
             'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions($positions)),
             'api.ivao.aero/v2/staffPositions*' => Http::response(['pages' => 1, 'items' => [
                 ['id' => '-SOC', 'name' => 'Special Operations Coordinator', 'departmentTeam' => ['department' => ['name' => 'Special Operations']]],
+                ['id' => '-SOA1', 'name' => 'Special Operations Advisor 1', 'departmentTeam' => ['department' => ['name' => 'Special Operations']]],
                 ['id' => '-SOA2', 'name' => 'Special Operations Advisor 2', 'departmentTeam' => ['department' => ['name' => 'Special Operations']]],
                 ['id' => '-EC', 'name' => 'Events Coordinator', 'departmentTeam' => ['department' => ['name' => 'Events']]],
+                ['id' => 'WD6', 'name' => 'Web Developer', 'departmentTeam' => ['department' => ['name' => 'Development Operations']]],
             ]]),
         ]);
     }
@@ -51,7 +53,7 @@ class AuditRoleRulesTest extends TestCase
 
         $this->artisan('discord:audit-rules')
             ->expectsOutputToContain('match no rule')
-            ->expectsOutputToContain('BR-SOA2    Special Operations Advisor 2       1 member(s) -> rule "Especiais"')
+            ->expectsOutputToContain('BR-SOA2    Special Operations Advisor 2           1 member(s) -> "Especiais"')
             ->assertSuccessful();
 
         $this->assertSame(['BR-SOC'], app(RolesService::class)->rules()->first()->getStaff()->all());
@@ -71,6 +73,38 @@ class AuditRoleRulesTest extends TestCase
         $rules = app(RolesService::class)->rules();
         $this->assertSame(['BR-SOC', 'BR-SOA2'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r1')->getStaff()->all());
         $this->assertSame(['BR-EC'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r2')->getStaff()->all());
+    }
+
+    public function test_it_ignores_positions_of_other_divisions()
+    {
+        $this->account('123456', '555');
+        $this->saveRoleRules([['id' => 'r1', 'name' => 'Especiais', 'roles' => ['100'], 'staff' => ['BR-SOC']]]);
+        $this->fakeIvao([
+            ['userId' => 123456, 'id' => 'PL-SOC', 'connectAs' => 'PL-SOC', 'onTrial' => false],
+            ['userId' => 123456, 'id' => 'WD6', 'connectAs' => 'WD6', 'onTrial' => false],
+        ]);
+
+        $this->artisan('discord:audit-rules', ['--fix' => true])
+            ->expectsOutputToContain('Every position held by a linked member is covered')
+            ->assertSuccessful();
+
+        $this->assertSame(['BR-SOC'], app(RolesService::class)->rules()->first()->getStaff()->all());
+    }
+
+    public function test_it_adds_the_position_to_every_rule_that_covers_it()
+    {
+        $this->account('123456', '555');
+        $this->saveRoleRules([
+            ['id' => 'r1', 'name' => 'Especiais', 'roles' => ['100'], 'staff' => ['BR-SOC']],
+            ['id' => 'r2', 'name' => 'Staff', 'roles' => ['300'], 'staff' => ['BR-SOC', 'BR-EC']],
+        ]);
+        $this->fakeIvao([['userId' => 123456, 'id' => 'BR-SOA1', 'connectAs' => 'BR-SOA1', 'onTrial' => false]]);
+
+        $this->artisan('discord:audit-rules', ['--fix' => true])->assertSuccessful();
+
+        $rules = app(RolesService::class)->rules();
+        $this->assertSame(['BR-SOC', 'BR-SOA1'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r1')->getStaff()->all());
+        $this->assertSame(['BR-SOC', 'BR-EC', 'BR-SOA1'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r2')->getStaff()->all());
     }
 
     public function test_it_ignores_positions_of_members_who_are_not_linked()

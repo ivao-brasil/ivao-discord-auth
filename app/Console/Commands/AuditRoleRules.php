@@ -40,6 +40,11 @@ class AuditRoleRules extends Command
 
         $covered = $rules->flatMap(fn (RoleRule $rule) => $rule->getStaff())->unique();
 
+        // Members of the guild hold positions all over the network; only the prefixes the
+        // rules already mention belong to this division, and a Polish coordinator is not
+        // missing from a rule written for Brazilian ones
+        $scope = $covered->map(fn (string $position) => self::prefixOf($position))->unique();
+
         // Only positions held by someone linked here can cost anyone a role
         $held = Collection::make($consentments->allActive())
             ->flatMap(fn (ConsentmentModel $account) => Collection::make($network[$account->userVid] ?? [])
@@ -47,12 +52,14 @@ class AuditRoleRules extends Command
             ->groupBy('position')
             ->map(fn (Collection $entries) => $entries->pluck('vid')->unique()->values());
 
-        $missing = $held->reject(fn (Collection $vids, string $position) => $covered->contains($position));
+        $inScope = $held->filter(fn (Collection $vids, string $position) => $scope->contains(self::prefixOf($position)));
+        $missing = $inScope->reject(fn (Collection $vids, string $position) => $covered->contains($position));
 
         $this->line(sprintf(
-            '%d positions held by linked members, %d listed in the rules.',
+            '%d positions held by linked members, %d of this division, %d listed in the rules.',
             $held->count(),
-            $held->keys()->intersect($covered)->count()
+            $inScope->count(),
+            $inScope->keys()->intersect($covered)->count()
         ));
 
         if ($missing->isEmpty()) {
@@ -69,33 +76,33 @@ class AuditRoleRules extends Command
 
         foreach ($missing as $position => $vids) {
             $department = $this->departmentOf($position, $catalogue);
-            $candidates = $this->rulesForDepartment($rules, $department, $catalogue);
+            $candidates = $this->rulesFor($rules, $position, $department, $catalogue);
 
             $this->line(sprintf(
-                '  %-10s %-34s %d member(s) %s',
+                '  %-10s %-38s %d member(s) -> %s',
                 $position,
                 $this->nameOf($position, $catalogue) ?: '(unknown position)',
                 $vids->count(),
-                $candidates->count() === 1
-                    ? '-> rule "'.$candidates->first()->getName().'"'
-                    : ($candidates->isEmpty() ? '-> no rule covers '.($department ?: 'this department') : '-> several rules, decide by hand')
+                $candidates->isEmpty()
+                    ? 'no rule covers '.($department ?: 'this department')
+                    : $candidates->map(fn (RoleRule $rule) => '"'.$rule->getName().'"')->join(', ')
             ));
 
-            if ($candidates->count() === 1) {
-                $additions[$candidates->first()->getId()][] = $position;
+            foreach ($candidates as $candidate) {
+                $additions[$candidate->getId()][] = $position;
             }
         }
 
         $this->newLine();
 
         if (! $this->option('fix')) {
-            $this->info('Run it again with --fix to add the positions that map to a single rule.');
+            $this->info('Run it again with --fix to add each position to the rules listed beside it.');
 
             return self::SUCCESS;
         }
 
         if ($additions === []) {
-            $this->warn('None of them maps to a single rule, so there is nothing to add automatically.');
+            $this->warn('None of them belongs to an existing rule, so there is nothing to add automatically.');
 
             return self::SUCCESS;
         }
@@ -111,21 +118,34 @@ class AuditRoleRules extends Command
     }
 
     /**
-     * Rules that already list a position of the same department, which is where a new
-     * position of that department belongs.
+     * Rules that already list a position of the same division and department, which is
+     * where a newly created position of that department belongs.
      *
      * @param  Collection<int, RoleRule>  $rules
      * @return Collection<int, RoleRule>
      */
-    private function rulesForDepartment(Collection $rules, string $department, array $catalogue): Collection
+    private function rulesFor(Collection $rules, string $position, string $department, array $catalogue): Collection
     {
         if ($department === '') {
             return Collection::make();
         }
 
-        return $rules->filter(fn (RoleRule $rule) => $rule->getStaff()
-            ->contains(fn (string $position) => $this->departmentOf($position, $catalogue) === $department))
-            ->values();
+        $prefix = self::prefixOf($position);
+
+        return $rules->filter(fn (RoleRule $rule) => $rule->getStaff()->contains(
+            fn (string $listed) => self::prefixOf($listed) === $prefix
+                && $this->departmentOf($listed, $catalogue) === $department
+        ))->values();
+    }
+
+    /**
+     * The division or FIR a position belongs to; HQ positions such as WD6 carry none.
+     */
+    private static function prefixOf(string $position): string
+    {
+        $dash = strpos($position, '-');
+
+        return $dash === false ? '' : substr($position, 0, $dash);
     }
 
     private function departmentOf(string $position, array $catalogue): string
