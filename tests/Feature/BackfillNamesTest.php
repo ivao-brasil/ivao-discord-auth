@@ -45,6 +45,10 @@ class BackfillNamesTest extends TestCase
 
         Http::fake([
             'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
+            'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions([
+                ['userId' => 123456, 'id' => 'BR-WM', 'connectAs' => 'BR-WM', 'onTrial' => false],
+                ['userId' => 333333, 'id' => 'BR-DIR', 'connectAs' => 'BR-DIR', 'onTrial' => false],
+            ])),
             'api.ivao.aero/v2/users/123456' => Http::response($this->ivaoUser()),
             'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser(['firstName' => null])),
             'discord.com/api/v10/guilds/'.self::GUILD.'/members/556' => Http::response(['nick' => 'Ciclano - 222222']),
@@ -58,8 +62,8 @@ class BackfillNamesTest extends TestCase
         $this->assertSame('BR-WM', $public->fresh()->staffPositions);
         $this->assertSame('Ciclano', $onDiscord->fresh()->firstName);
         $this->assertSame('Beltrano', $fromDatabase->fresh()->firstName);
-        // The nickname says BR-DIR, but a nickname can be years out of date, so no position is stored
-        $this->assertNull($fromDatabase->fresh()->staffPositions);
+        // Taken from the network list, not from the nickname, which can be years out of date
+        $this->assertSame('BR-DIR', $fromDatabase->fresh()->staffPositions);
         $this->assertNull($nameless->fresh()->firstName);
     }
 
@@ -69,6 +73,10 @@ class BackfillNamesTest extends TestCase
 
         Http::fake([
             'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
+            'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions([
+                ['userId' => 123456, 'id' => 'BR-WM', 'connectAs' => 'BR-WM', 'onTrial' => false],
+                ['userId' => 333333, 'id' => 'BR-DIR', 'connectAs' => 'BR-DIR', 'onTrial' => false],
+            ])),
             'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser()),
             'discord.com/api/v10/*' => Http::response(['nick' => null]),
         ]);

@@ -45,6 +45,9 @@ class MemberSyncService
     /** @var array<string, array|null> IVAO users of the batch being synced */
     private $ivaoUsers = [];
 
+    /** @var array<string, array>|false|null Staff positions of the whole network, false when unreadable */
+    private $networkPositions = null;
+
     public function __construct(
         IVAOUserDirectoryContract $directory,
         GuildServiceContract $guildService,
@@ -87,32 +90,32 @@ class MemberSyncService
         }
 
         $member = new Member($user);
+
+        // The user endpoint hides the positions of private profiles, so they come from the
+        // network list; if that list cannot be read, the ones kept from the login stand in
+        $positions = $this->staffPositionsOf($account->userVid)
+            ?? ($member->hasHiddenProfile() ? $this->storedPositions($account) : null);
+
+        if ($positions !== null) {
+            $member->useStaffPositions($positions);
+        }
+
         $eligible = $this->resolver->isEligible($member);
         $hidden = $member->hasHiddenProfile();
 
         $desired = $eligible ? $this->resolver->rolesFor($member) : Collection::make();
         $current = Collection::make($discordMember['roles'] ?? []);
 
-        // A hidden profile comes without the staff positions, so neither the roles that
-        // depend on them nor the nickname can be decided from it
-        $removable = $hidden
-            ? $this->resolver->managedRoles()->diff($this->resolver->staffRoles())
-            : $this->resolver->managedRoles();
-
-        $titles = $this->storedTitles($account);
-
-        // With a hidden profile and no positions kept from a login there is nothing to
-        // build a staff nickname from, and the one already there is left alone
-        $nickname = $eligible && (! $hidden || $titles !== null)
-            ? $member->generateNickname($account->firstName, $titles)
-            : null;
+        // Positions are known for everyone now, so only the name can be missing, and
+        // without it there is no nickname to build
+        $nickname = $eligible ? $member->generateNickname($account->firstName) : null;
 
         return new SyncPlan(
             $discordMember,
             $member,
             $eligible,
             $desired->diff($current)->values()->all(),
-            $current->intersect($removable)->diff($desired)->values()->all(),
+            $current->intersect($this->resolver->managedRoles())->diff($desired)->values()->all(),
             $nickname !== null && $nickname !== ($discordMember['nick'] ?? null) ? $nickname : null,
         );
     }
@@ -269,7 +272,7 @@ class MemberSyncService
      */
     private function rememberProfile(ConsentmentModel $account, ?Member $member): void
     {
-        if ($member === null || $member->hasHiddenProfile()) {
+        if ($member === null) {
             return;
         }
 
@@ -281,19 +284,51 @@ class MemberSyncService
             $changes['firstName'] = mb_substr($firstName, 0, 64);
         }
 
-        if ($positions !== (string) $account->staffPositions) {
-            $changes['staffPositions'] = mb_substr($positions, 0, 512);
+        // Only worth keeping when the network list answered, which is what makes it true
+        if ($this->networkPositions !== false && $positions !== (string) $account->staffPositions) {
+            $changes['staffPositions'] = mb_substr($positions, 0, 512) ?: null;
         }
 
         $changes && $account->update($changes);
     }
 
-    /** @return string[]|null Positions kept from the last login, in nickname order */
-    private function storedTitles(ConsentmentModel $account): ?array
+    /**
+     * The positions the network lists for a VID, or null when the list could not be read.
+     * The whole list is fetched once and cached.
+     *
+     * @return array<int, array>|null
+     */
+    private function staffPositionsOf(string $vid): ?array
+    {
+        if ($this->networkPositions === null) {
+            try {
+                $this->networkPositions = $this->directory->staffPositions();
+            } catch (\Throwable $e) {
+                Log::warning($e->getMessage(), ['event' => 'sync.staff_positions_failed']);
+                $this->networkPositions = false;
+            }
+        }
+
+        return $this->networkPositions === false ? null : ($this->networkPositions[$vid] ?? []);
+    }
+
+    /**
+     * Positions kept from the last login, shaped like the ones the network lists.
+     *
+     * @return array<int, array>|null
+     */
+    private function storedPositions(ConsentmentModel $account): ?array
     {
         $positions = trim((string) $account->staffPositions);
 
-        return $positions === '' ? null : explode(':', $positions);
+        if ($positions === '') {
+            return null;
+        }
+
+        return array_map(
+            fn (string $title) => ['id' => $title, 'connectAs' => $title, 'onTrial' => false],
+            explode(':', $positions)
+        );
     }
 
     private function recordChanges(ConsentmentModel $account, SyncResult $result, Collection $current, Guild $guild): void

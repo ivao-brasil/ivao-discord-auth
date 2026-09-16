@@ -29,6 +29,14 @@ trait IvaoFixtures
         ], $overrides);
     }
 
+    /**
+     * The network staff position list, which is where the sync reads positions from.
+     */
+    protected function ivaoStaffPositions(array $positions = [['userId' => 123456, 'id' => 'BR-WM', 'connectAs' => 'BR-WM', 'onTrial' => false]]): array
+    {
+        return ['items' => $positions, 'totalItems' => count($positions), 'perPage' => 100, 'page' => 1, 'pages' => 1];
+    }
+
     protected function saveRoleRules(array $rules): void
     {
         app(RolesService::class)->saveAllRoles($rules);

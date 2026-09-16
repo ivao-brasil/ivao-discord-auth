@@ -93,6 +93,7 @@ class DiscordInteractionTest extends TestCase
 
         Http::fake([
             'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
+            'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions()),
             'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser()),
             'discord.com/api/v10/guilds/'.self::GUILD.'/roles' => Http::response([['id' => '900', 'name' => 'Web']]),
             'discord.com/api/v10/guilds/'.self::GUILD.'/members/555' => Http::response(['roles' => [], 'nick' => 'Fulano | BR-WM']),

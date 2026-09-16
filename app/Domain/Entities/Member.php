@@ -64,17 +64,7 @@ class Member
         $this->firstName = $userData['firstName'] ?? '';
         $this->division = $userData['divisionId'] ?? null;
 
-        $positions = Collection::make($userData['userStaffPositions'] ?? [])->filter(fn ($position) => ! empty($position['id']));
-
-        $this->staff = $positions->pluck('id')->values();
-        $this->trialStaff = $positions->where('onTrial', true)->pluck('id')->values();
-
-        // HQ positions come as IVAO-XX in connectAs and are listed after division positions
-        $this->staffTitles = $positions
-            ->map(fn ($position) => $position['connectAs'] ?? $position['id'])
-            ->partition(fn ($title) => ! str_starts_with($title, 'IVAO-'))
-            ->flatten()
-            ->values();
+        $this->readStaffPositions($userData['userStaffPositions'] ?? []);
 
         $this->accountStatus = $userData['rating']['networkRating']['id'] ?? null;
         $this->atcRating = $userData['rating']['atcRating']['id'] ?? null;
@@ -92,6 +82,33 @@ class Member
     {
         $userData = $IVAOAPI->getUserData();
         return new self($userData);
+    }
+
+    /**
+     * Replaces what the user endpoint said about positions, which comes empty for
+     * private profiles, with the ones listed for this VID by the network.
+     *
+     * @param  array<int, array>  $positions
+     */
+    public function useStaffPositions(array $positions): void
+    {
+        $this->readStaffPositions($positions);
+    }
+
+    /** @param array<int, array> $positions */
+    private function readStaffPositions(array $positions): void
+    {
+        $positions = Collection::make($positions)->filter(fn ($position) => ! empty($position['id']));
+
+        $this->staff = $positions->pluck('id')->values();
+        $this->trialStaff = $positions->where('onTrial', true)->pluck('id')->values();
+
+        // HQ positions come as IVAO-XX in connectAs and are listed after division positions
+        $this->staffTitles = $positions
+            ->map(fn ($position) => $position['connectAs'] ?? $position['id'])
+            ->partition(fn ($title) => ! str_starts_with($title, 'IVAO-'))
+            ->flatten()
+            ->values();
     }
 
     public function getFirstName()
