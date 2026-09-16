@@ -174,10 +174,11 @@ class DiscordGuildService implements GuildServiceContract
         return Http::baseUrl(self::API_URL)
             ->withToken($this->botToken, 'Bot')
             ->acceptJson()
-            // Retry once on rate limit, waiting Discord's retry_after
-            ->retry(2, function (int $attempt, \Exception $e) {
+            // Wait out Discord's retry_after, a few times over: a full sync asks about
+            // thousands of members and one refusal costs that member their turn
+            ->retry(5, function (int $attempt, \Exception $e) {
                 return $e instanceof RequestException
-                    ? (int) ceil(($e->response->json('retry_after') ?? 1) * 1000)
+                    ? (int) ceil(($e->response->json('retry_after') ?? 1) * 1000) + 100 * $attempt
                     : 1000;
             }, function (\Exception $e) {
                 return $e instanceof RequestException && $e->response->status() === 429;

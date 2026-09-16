@@ -11,6 +11,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\IvaoFixtures;
@@ -260,6 +261,26 @@ class MemberSyncTest extends TestCase
         $this->assertSame(1, $summary['checked']);
         $this->assertSame(0, $summary['failed']);
         $this->assertSame(0, $summary['away']);
+    }
+
+    public function test_a_member_rate_limited_several_times_is_still_synced()
+    {
+        Sleep::fake();
+        $this->account();
+
+        $this->fakeApis(Http::response($this->ivaoUser()), ['roles' => [], 'nick' => null], [
+            self::MEMBER_URL => Http::sequence()
+                ->push(['message' => 'You are being rate limited', 'retry_after' => 0.8], 429)
+                ->push(['message' => 'You are being rate limited', 'retry_after' => 0.8], 429)
+                ->push(['message' => 'You are being rate limited', 'retry_after' => 0.8], 429)
+                ->push(['message' => 'You are being rate limited', 'retry_after' => 0.8], 429)
+                ->push(['roles' => [], 'nick' => 'Fulano | BR-WM'], 200)
+                ->push(null, 204),
+        ]);
+
+        $summary = app(MemberSyncService::class)->syncAll();
+
+        $this->assertSame(0, $summary['failed']);
     }
 
     public function test_member_without_a_public_name_keeps_the_nickname()
