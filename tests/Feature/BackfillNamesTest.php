@@ -55,8 +55,10 @@ class BackfillNamesTest extends TestCase
         $this->artisan('discord:backfill-names')->assertSuccessful();
 
         $this->assertSame('Fulano', $public->fresh()->firstName);
+        $this->assertSame('BR-WM', $public->fresh()->staffPositions);
         $this->assertSame('Ciclano', $onDiscord->fresh()->firstName);
         $this->assertSame('Beltrano', $fromDatabase->fresh()->firstName);
+        $this->assertSame('BR-DIR', $fromDatabase->fresh()->staffPositions);
         $this->assertNull($nameless->fresh()->firstName);
     }
 

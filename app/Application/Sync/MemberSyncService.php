@@ -87,7 +87,9 @@ class MemberSyncService
             ? $this->resolver->managedRoles()->diff($this->resolver->staffRoles())
             : $this->resolver->managedRoles();
 
-        $nickname = $eligible && ! $hidden ? $member->generateNickname($account->firstName) : null;
+        $nickname = $eligible
+            ? $member->generateNickname($account->firstName, $this->storedTitles($account))
+            : null;
 
         return new SyncPlan(
             $discordMember,
@@ -177,7 +179,7 @@ class MemberSyncService
             return SyncResult::unverified();
         }
 
-        $this->rememberFirstName($account, $plan->member);
+        $this->rememberProfile($account, $plan->member);
 
         $guild = Guild::FromService($this->guildService);
         $added = [];
@@ -209,16 +211,36 @@ class MemberSyncService
     }
 
     /**
-     * Keeps the name from IVAO while it is available, so the nickname can still be built
-     * for members who later make their profile private.
+     * Keeps the name and the positions IVAO exposes, so the nickname can still be built
+     * for members whose profile is private.
      */
-    private function rememberFirstName(ConsentmentModel $account, ?Member $member): void
+    private function rememberProfile(ConsentmentModel $account, ?Member $member): void
     {
-        $firstName = $member ? trim((string) $member->getFirstName()) : '';
+        if ($member === null || $member->hasHiddenProfile()) {
+            return;
+        }
+
+        $changes = [];
+        $firstName = trim((string) $member->getFirstName());
+        $positions = $member->getStaffTitles()->join(':');
 
         if ($firstName !== '' && $firstName !== $account->firstName) {
-            $account->update(['firstName' => mb_substr($firstName, 0, 64)]);
+            $changes['firstName'] = mb_substr($firstName, 0, 64);
         }
+
+        if ($positions !== (string) $account->staffPositions) {
+            $changes['staffPositions'] = mb_substr($positions, 0, 512);
+        }
+
+        $changes && $account->update($changes);
+    }
+
+    /** @return string[]|null Positions kept from the last login, in nickname order */
+    private function storedTitles(ConsentmentModel $account): ?array
+    {
+        $positions = trim((string) $account->staffPositions);
+
+        return $positions === '' ? null : explode(':', $positions);
     }
 
     private function recordChanges(ConsentmentModel $account, SyncResult $result, Collection $current, Guild $guild): void
