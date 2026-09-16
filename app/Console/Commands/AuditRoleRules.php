@@ -81,36 +81,55 @@ class AuditRoleRules extends Command
         $this->newLine();
 
         $additions = [];
+        $byHand = 0;
 
         foreach ($missing as $position => $vids) {
             $department = $this->departmentOf($position, $catalogue);
             $candidates = $this->rulesFor($rules, $position, $department, $catalogue);
+
+            $described = $candidates->map(function (RoleRule $rule) use ($position, $catalogue, $roleNames, &$additions, &$byHand) {
+                $label = '"'.$this->label($rule, $roleNames).'"';
+
+                // A rule listing only the coordinators of a department is not where an
+                // advisor of that department belongs, so only the same team is applied
+                if (! $this->listsTeamOf($rule, $position, $catalogue)) {
+                    $byHand++;
+
+                    return $label.' (department only)';
+                }
+
+                $additions[$rule->getId()][] = $position;
+
+                return $label;
+            });
 
             $this->line(sprintf(
                 '  %-10s %-38s %d member(s) -> %s',
                 $position,
                 $this->nameOf($position, $catalogue) ?: '(unknown position)',
                 $vids->count(),
-                $candidates->isEmpty()
+                $described->isEmpty()
                     ? 'no rule covers '.($department ?: 'this department')
-                    : $candidates->map(fn (RoleRule $rule) => '"'.$this->label($rule, $roleNames).'"')->join(', ')
+                    : $described->join(', ')
             ));
-
-            foreach ($candidates as $candidate) {
-                $additions[$candidate->getId()][] = $position;
-            }
         }
 
         $this->newLine();
 
+        if ($byHand > 0) {
+            $this->warn('A rule marked "department only" lists no position of the same team, such as a rule');
+            $this->warn('for coordinators against an advisor position. Add those in /admin if they apply.');
+            $this->newLine();
+        }
+
         if (! $this->option('fix')) {
-            $this->info('Run it again with --fix to add each position to the rules listed beside it.');
+            $this->info('Run it again with --fix to add each position to the rules of its own team.');
 
             return self::SUCCESS;
         }
 
         if ($additions === []) {
-            $this->warn('None of them belongs to an existing rule, so there is nothing to add automatically.');
+            $this->warn('No rule lists a position of the same team, so there is nothing to add safely.');
 
             return self::SUCCESS;
         }
@@ -122,7 +141,30 @@ class AuditRoleRules extends Command
         $added = array_sum(array_map('count', $additions));
         $this->info("Added {$added} position(s) to ".count($additions).' rule(s).');
 
+        if ($byHand > 0) {
+            $this->info("Left {$byHand} rule match(es) for you to decide in /admin.");
+        }
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Whether the rule already lists a position of the same division and team, which is
+     * what tells a coordinators rule apart from one that takes advisors too.
+     */
+    private function listsTeamOf(RoleRule $rule, string $position, array $catalogue): bool
+    {
+        $prefix = self::prefixOf($position);
+        $team = $this->teamOf($position, $catalogue);
+
+        return $team !== '' && $rule->getStaff()->contains(
+            fn (string $listed) => self::prefixOf($listed) === $prefix && $this->teamOf($listed, $catalogue) === $team
+        );
+    }
+
+    private function teamOf(string $position, array $catalogue): string
+    {
+        return $catalogue[self::catalogueCode($position, $catalogue)]['team'] ?? '';
     }
 
     /**

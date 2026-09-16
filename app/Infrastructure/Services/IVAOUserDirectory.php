@@ -111,7 +111,7 @@ class IVAOUserDirectory implements IVAOUserDirectoryContract
      *
      * Codes come without the division prefix, so BR-SOA2 is listed as -SOA2.
      *
-     * @return array<string, array{name: string, department: string}>
+     * @return array<string, array{name: string, department: string, team: string}>
      */
     public function staffPositionCatalogue(): array
     {
@@ -136,6 +136,8 @@ class IVAOUserDirectory implements IVAOUserDirectoryContract
                     $catalogue[(string) $item['id']] = [
                         'name' => (string) ($item['name'] ?? $item['id']),
                         'department' => (string) ($item['departmentTeam']['department']['name'] ?? ''),
+                        // Coordinators and advisors of a department sit in different teams
+                        'team' => (string) ($item['departmentTeam']['id'] ?? ''),
                     ];
                 }
 

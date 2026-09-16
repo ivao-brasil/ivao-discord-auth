@@ -43,11 +43,11 @@ class AuditRoleRulesTest extends TestCase
             'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
             'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions($positions)),
             'api.ivao.aero/v2/staffPositions*' => Http::response(['pages' => 1, 'items' => [
-                ['id' => '-SOC', 'name' => 'Special Operations Coordinator', 'departmentTeam' => ['department' => ['name' => 'Special Operations']]],
-                ['id' => '-SOA1', 'name' => 'Special Operations Advisor 1', 'departmentTeam' => ['department' => ['name' => 'Special Operations']]],
-                ['id' => '-SOA2', 'name' => 'Special Operations Advisor 2', 'departmentTeam' => ['department' => ['name' => 'Special Operations']]],
-                ['id' => '-EC', 'name' => 'Events Coordinator', 'departmentTeam' => ['department' => ['name' => 'Events']]],
-                ['id' => 'WD6', 'name' => 'Web Developer', 'departmentTeam' => ['department' => ['name' => 'Development Operations']]],
+                ['id' => '-SOC', 'name' => 'Special Operations Coordinator', 'departmentTeam' => ['id' => 'SO-DIV-COORD', 'department' => ['name' => 'Special Operations']]],
+                ['id' => '-SOA1', 'name' => 'Special Operations Advisor 1', 'departmentTeam' => ['id' => 'SO-DIV-ADV', 'department' => ['name' => 'Special Operations']]],
+                ['id' => '-SOA2', 'name' => 'Special Operations Advisor 2', 'departmentTeam' => ['id' => 'SO-DIV-ADV', 'department' => ['name' => 'Special Operations']]],
+                ['id' => '-EC', 'name' => 'Events Coordinator', 'departmentTeam' => ['id' => 'EVENT-DIV-COORD', 'department' => ['name' => 'Events']]],
+                ['id' => 'WD6', 'name' => 'Web Developer', 'departmentTeam' => ['id' => 'DEV-WEB', 'department' => ['name' => 'Development Operations']]],
             ]]),
         ]);
     }
@@ -77,11 +77,11 @@ class AuditRoleRulesTest extends TestCase
         $this->assertSame(['BR-SOC'], app(RolesService::class)->rules()->first()->getStaff()->all());
     }
 
-    public function test_fix_adds_the_position_to_the_rule_of_the_same_department()
+    public function test_fix_adds_the_position_to_the_rule_of_the_same_team()
     {
         $this->account('123456', '555');
         $this->saveRoleRules([
-            ['id' => 'r1', 'name' => 'Especiais', 'roles' => ['100'], 'staff' => ['BR-SOC']],
+            ['id' => 'r1', 'name' => 'Especiais', 'roles' => ['100'], 'staff' => ['BR-SOC', 'BR-SOA1']],
             ['id' => 'r2', 'name' => 'Eventos', 'roles' => ['200'], 'staff' => ['BR-EC']],
         ]);
         $this->fakeIvao([['userId' => 123456, 'id' => 'BR-SOA2', 'connectAs' => 'BR-SOA2', 'onTrial' => false]]);
@@ -89,8 +89,21 @@ class AuditRoleRulesTest extends TestCase
         $this->artisan('discord:audit-rules', ['--fix' => true])->assertSuccessful();
 
         $rules = app(RolesService::class)->rules();
-        $this->assertSame(['BR-SOC', 'BR-SOA2'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r1')->getStaff()->all());
+        $this->assertSame(['BR-SOC', 'BR-SOA1', 'BR-SOA2'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r1')->getStaff()->all());
         $this->assertSame(['BR-EC'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r2')->getStaff()->all());
+    }
+
+    public function test_a_coordinators_rule_never_receives_an_advisor_position()
+    {
+        $this->account('123456', '555');
+        $this->saveRoleRules([['id' => 'r1', 'name' => 'Coordenação', 'roles' => ['100'], 'staff' => ['BR-SOC']]]);
+        $this->fakeIvao([['userId' => 123456, 'id' => 'BR-SOA2', 'connectAs' => 'BR-SOA2', 'onTrial' => false]]);
+
+        $this->artisan('discord:audit-rules', ['--fix' => true])
+            ->expectsOutputToContain('(department only)')
+            ->assertSuccessful();
+
+        $this->assertSame(['BR-SOC'], app(RolesService::class)->rules()->first()->getStaff()->all());
     }
 
     public function test_it_ignores_positions_of_other_divisions()
@@ -109,20 +122,20 @@ class AuditRoleRulesTest extends TestCase
         $this->assertSame(['BR-SOC'], app(RolesService::class)->rules()->first()->getStaff()->all());
     }
 
-    public function test_it_adds_the_position_to_every_rule_that_covers_it()
+    public function test_it_adds_the_position_to_every_rule_of_its_team()
     {
         $this->account('123456', '555');
         $this->saveRoleRules([
-            ['id' => 'r1', 'name' => 'Especiais', 'roles' => ['100'], 'staff' => ['BR-SOC']],
-            ['id' => 'r2', 'name' => 'Staff', 'roles' => ['300'], 'staff' => ['BR-SOC', 'BR-EC']],
+            ['id' => 'r1', 'name' => 'Especiais', 'roles' => ['100'], 'staff' => ['BR-SOA1']],
+            ['id' => 'r2', 'name' => 'Staff', 'roles' => ['300'], 'staff' => ['BR-SOA1', 'BR-EC']],
         ]);
-        $this->fakeIvao([['userId' => 123456, 'id' => 'BR-SOA1', 'connectAs' => 'BR-SOA1', 'onTrial' => false]]);
+        $this->fakeIvao([['userId' => 123456, 'id' => 'BR-SOA2', 'connectAs' => 'BR-SOA2', 'onTrial' => false]]);
 
         $this->artisan('discord:audit-rules', ['--fix' => true])->assertSuccessful();
 
         $rules = app(RolesService::class)->rules();
-        $this->assertSame(['BR-SOC', 'BR-SOA1'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r1')->getStaff()->all());
-        $this->assertSame(['BR-SOC', 'BR-EC', 'BR-SOA1'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r2')->getStaff()->all());
+        $this->assertSame(['BR-SOA1', 'BR-SOA2'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r1')->getStaff()->all());
+        $this->assertSame(['BR-SOA1', 'BR-EC', 'BR-SOA2'], $rules->firstWhere(fn ($rule) => $rule->getId() === 'r2')->getStaff()->all());
     }
 
     public function test_it_ignores_positions_of_members_who_are_not_linked()
