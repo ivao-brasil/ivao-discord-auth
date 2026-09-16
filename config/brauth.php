@@ -20,6 +20,9 @@ return [
         // means the data it is acting on cannot be trusted
         'max_removals' => (int) env('SYNC_MAX_REMOVALS', 50),
 
+        // The same for nicknames: a run that renames more members than this stops
+        'max_renames' => (int) env('SYNC_MAX_RENAMES', 50),
+
         // Members asked about at once; Discord and IVAO answer these in parallel
         'batch_size' => (int) env('SYNC_BATCH_SIZE', 10),
 

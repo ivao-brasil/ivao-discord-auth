@@ -275,6 +275,28 @@ class MemberSyncTest extends TestCase
         Log::shouldHaveReceived('critical')->once();
     }
 
+    public function test_a_run_that_renames_too_many_members_stops()
+    {
+        config(['brauth.sync.max_renames' => 2]);
+
+        foreach (range(1, 6) as $i) {
+            ConsentmentModel::create([
+                'userVid' => "12345{$i}", 'discordId' => '555', 'nickName' => 'x',
+                'roles' => '', 'division' => 'BR', 'status' => true,
+            ]);
+        }
+
+        $this->fakeApis(Http::response($this->ivaoUser()), ['roles' => ['900', '901'], 'nick' => 'Apelido antigo']);
+
+        Log::spy();
+
+        $summary = app(MemberSyncService::class)->syncAll();
+
+        $this->assertTrue($summary['aborted']);
+        $this->assertLessThan(6, $summary['checked']);
+        Log::shouldHaveReceived('critical')->once();
+    }
+
     public function test_an_account_ivao_does_not_answer_for_keeps_everything()
     {
         $account = $this->account();
