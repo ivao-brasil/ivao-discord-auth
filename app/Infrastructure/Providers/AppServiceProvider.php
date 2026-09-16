@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Laravel prefers resources/lang when it exists, and a leftover copy of it
+        // from an older deploy would shadow the translations of this version
+        $this->app->useLangPath(base_path('lang'));
+
         $this->app->bind(IVAOApiServiceContract::class, IVAOApiService::class);
 
         $this->app->bind(DiscordIVAOAuthServiceInterface::class, DiscordIVAOAuthService::class);
