@@ -179,9 +179,16 @@ class Member
         ]);
     }
 
-    public function generateNickname()
+    /**
+     * The nickname for this member, or null when IVAO does not expose their name.
+     */
+    public function generateNickname(): ?string
     {
-        $firstName = explode(' ', $this->firstName)[0];
+        $firstName = explode(' ', trim($this->firstName))[0];
+
+        if ($firstName === '') {
+            return null;
+        }
 
         if (! $this->isStaff()) {
             return mb_substr("$firstName - $this->vid", 0, self::NICKNAME_MAX_LENGTH);

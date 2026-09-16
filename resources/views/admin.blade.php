@@ -50,6 +50,8 @@
                         <div class="row__title" x-text="syncTitle"></div>
                         <div class="row__detail" x-text="syncDetail"></div>
                     </div>
+                    <button type="button" class="text-button" @click="syncEveryone()" :disabled="syncQueued"
+                            x-text="syncQueued ? t.sync.queued : t.sync.runNow"></button>
                 </div>
             </div>
 

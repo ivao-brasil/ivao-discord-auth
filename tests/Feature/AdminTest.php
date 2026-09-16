@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Application\Sync\MemberSyncService;
 use App\Application\Sync\SyncStatusStore;
 use App\ConsentmentModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -239,4 +240,18 @@ class AdminTest extends TestCase
         $this->assertEquals(0, $account->refresh()->status);
         Log::shouldHaveReceived('notice')->withArgs(fn ($message, $context) => $context['event'] === 'admin.member.removed' && $context['vid'] === '123456');
     }
+    public function test_admin_can_schedule_a_sync_of_every_member()
+    {
+        $this->asAdmin()->postJson('/api/admin/sync')->assertOk()->assertJson(['queued' => true]);
+
+        $this->assertTrue(app(MemberSyncService::class)->fullRunWasRequested());
+    }
+
+    public function test_members_cannot_schedule_a_sync_of_every_member()
+    {
+        $this->withSession(['IVAO_USER' => $this->ivaoUser()])->postJson('/api/admin/sync')->assertRedirect(route('home'));
+
+        $this->assertFalse(app(MemberSyncService::class)->fullRunWasRequested());
+    }
+
 }

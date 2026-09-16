@@ -43,7 +43,9 @@ class DiscordGuildService implements GuildServiceContract
             $this->addRole($member->getDiscordId(), $roleId, $guild);
         });
 
-        $this->setNickname($member->getDiscordId(), $member->generateNickname(), $guild);
+        if ($nickname = $member->generateNickname()) {
+            $this->setNickname($member->getDiscordId(), $nickname, $guild);
+        }
     }
 
     public function getMember(string $discordId, Guild $guild): ?array

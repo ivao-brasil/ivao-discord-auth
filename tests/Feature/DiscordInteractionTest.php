@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Application\Sync\MemberSyncService;
 use App\ConsentmentModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -55,6 +56,16 @@ class DiscordInteractionTest extends TestCase
         return ['type' => 2, 'token' => 'interaction-token', 'data' => ['name' => 'sync'], 'member' => ['user' => ['id' => $discordId]]];
     }
 
+    private function syncEveryoneCommand(string $discordId = '555'): array
+    {
+        return [
+            'type' => 2,
+            'token' => 'interaction-token',
+            'data' => ['name' => 'sync', 'options' => [['name' => 'todos', 'type' => 5, 'value' => true]]],
+            'member' => ['user' => ['id' => $discordId]],
+        ];
+    }
+
     public function test_answers_discord_ping()
     {
         $this->interact(['type' => 1])->assertOk()->assertExactJson(['type' => 1]);
@@ -95,6 +106,34 @@ class DiscordInteractionTest extends TestCase
         Http::assertSent(fn (Request $r) => $r->method() === 'PATCH'
             && $r->url() === 'https://discord.com/api/v10/webhooks/app-id/interaction-token/messages/@original'
             && str_contains($r['content'], __('text.syncRolesAdded', ['roles' => 'Web'])));
+    }
+
+    public function test_admin_can_ask_for_a_sync_of_every_member()
+    {
+        config(['brauth.admin_vids' => ['123456']]);
+        ConsentmentModel::create(['userVid' => '123456', 'discordId' => '555', 'nickName' => 'x', 'roles' => '', 'division' => 'BR', 'status' => true]);
+
+        $this->interact($this->syncEveryoneCommand())
+            ->assertOk()
+            ->assertJsonPath('type', 4)
+            ->assertJsonPath('data.flags', 64)
+            ->assertJsonPath('data.content', __('text.syncEveryoneQueued'));
+
+        $this->assertTrue(app(MemberSyncService::class)->fullRunWasRequested());
+        Http::assertNothingSent();
+    }
+
+    public function test_member_cannot_ask_for_a_sync_of_every_member()
+    {
+        config(['brauth.admin_vids' => ['111111']]);
+        ConsentmentModel::create(['userVid' => '123456', 'discordId' => '555', 'nickName' => 'x', 'roles' => '', 'division' => 'BR', 'status' => true]);
+
+        $this->interact($this->syncEveryoneCommand())
+            ->assertOk()
+            ->assertJsonPath('data.content', __('text.syncEveryoneNotAllowed'));
+
+        $this->assertFalse(app(MemberSyncService::class)->fullRunWasRequested());
+        Http::assertNothingSent();
     }
 
     public function test_sync_command_has_a_cooldown()
