@@ -54,9 +54,15 @@ class RuleController extends Controller
 
         $rules = RoleRule::collection($data['rules']);
 
-        $refused = $assignableRoles->refused($rules->flatMap->getRoles()->unique()->values()->all());
+        // Only roles being brought in are checked: a role deleted or made an administrator
+        // after a rule was written would otherwise lock every rule out of the admin
+        $stored = $this->rolesService->rules()->flatMap->getRoles()->unique();
+        $refused = $assignableRoles->refused($rules->flatMap->getRoles()->unique()->diff($stored)->values()->all());
+
         if ($refused) {
-            throw ValidationException::withMessages(['rules' => __('admin.errors.rolesNotAssignable')]);
+            throw ValidationException::withMessages([
+                'rules' => __('admin.errors.rolesNotAssignable', ['roles' => implode(', ', $assignableRoles->namesOf($refused))]),
+            ]);
         }
 
         $this->rolesService->saveAllRoles($rules->map->toArray()->all());

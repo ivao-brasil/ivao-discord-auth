@@ -61,6 +61,19 @@ class AssignableRoles
         return array_values(array_diff($roleIds, $assignable->all()));
     }
 
+    /**
+     * Names the given roles, falling back to the id of one the server no longer has.
+     *
+     * @param  string[]  $roleIds
+     * @return string[]
+     */
+    public function namesOf(array $roleIds): array
+    {
+        $names = $this->all()->pluck('name', 'id');
+
+        return array_map(fn (string $id) => $names[$id] ?? $id, $roleIds);
+    }
+
     private function refusalReason(array $role): ?string
     {
         if ($role['managed'] ?? false) {

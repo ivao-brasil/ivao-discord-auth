@@ -127,7 +127,7 @@ return [
     'errors' => [
         'generic' => 'Não foi possível concluir. Tente novamente.',
         'unreachable' => 'Não foi possível consultar a IVAO ou o Discord agora. Tente novamente em alguns minutos.',
-        'rolesNotAssignable' => 'Algumas regras usam cargos que não existem mais ou que têm permissão de administrador.',
+        'rolesNotAssignable' => 'Estes cargos não existem mais ou têm permissão de administrador: :roles.',
         'ruleIncomplete' => 'Dê um nome e escolha pelo menos um cargo.',
     ],
 ];
