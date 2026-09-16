@@ -98,11 +98,25 @@ class MemberSyncTest extends TestCase
         Http::assertNotSent(fn (Request $r) => in_array($r->method(), ['PUT', 'PATCH', 'DELETE']));
     }
 
-    public function test_inactive_account_loses_managed_roles_but_keeps_nickname()
+    public function test_inactive_account_keeps_its_roles()
     {
         $account = $this->account();
         $this->fakeApis(
             Http::response($this->ivaoUser(['rating' => ['networkRating' => ['id' => Member::STATUS_INACTIVE]]])),
+            ['roles' => ['900', '901', '777'], 'nick' => 'Fulano | BR-WM']
+        );
+
+        $result = app(MemberSyncService::class)->sync($account);
+
+        $this->assertSame([], $result->removed);
+        Http::assertNotSent(fn (Request $r) => $r->method() === 'DELETE');
+    }
+
+    public function test_suspended_account_loses_managed_roles_but_keeps_nickname()
+    {
+        $account = $this->account();
+        $this->fakeApis(
+            Http::response($this->ivaoUser(['rating' => ['networkRating' => ['id' => Member::STATUS_SUSPENDED]]])),
             ['roles' => ['900', '901', '777'], 'nick' => 'Apelido antigo']
         );
 

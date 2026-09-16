@@ -22,9 +22,16 @@ class RoleResolver
         return $member->getTotalHours() > config('brauth.min_hours');
     }
 
+    /**
+     * Whether the member still qualifies for the roles the rules give.
+     *
+     * Only a suspended account is proof that the roles are no longer due: inactivity on
+     * IVAO is common and reversible, and costing a member their access over it would
+     * shut out exactly the people who come back.
+     */
     public function isEligible(Member $member): bool
     {
-        return $member->isActive() && $this->hasEnoughHours($member);
+        return ! $member->isSuspended() && $this->hasEnoughHours($member);
     }
 
     /**
