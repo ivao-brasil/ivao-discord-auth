@@ -55,6 +55,8 @@ document.addEventListener('alpine:init', () => {
         member: null,
         memberSummary: null,
         confirmRemove: false,
+        keptName: '',
+        keptPositions: '',
 
         init() {
             this.loadRules();
@@ -356,8 +358,44 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 this.member = await this.request('GET', `/api/admin/members/${summary.id}`);
+                this.readKept(this.member.kept);
             } catch (error) {
                 this.sheetError = error.message;
+            }
+        },
+
+        readKept(kept) {
+            this.keptName = kept.firstName ?? '';
+            this.keptPositions = (kept.staffPositions ?? '').replaceAll(':', ' ');
+        },
+
+        get keptChanged() {
+            if (!this.member) {
+                return false;
+            }
+
+            const positions = this.keptPositions.trim().toUpperCase().split(/[\s,;:]+/).filter(Boolean).join(':');
+
+            return this.keptName.trim() !== (this.member.kept.firstName ?? '')
+                || positions !== (this.member.kept.staffPositions ?? '');
+        },
+
+        async saveKept() {
+            this.busy = true;
+            this.sheetError = null;
+
+            try {
+                this.member.kept = await this.request('PUT', `/api/admin/members/${this.memberSummary.id}`, {
+                    firstName: this.keptName.trim(),
+                    staffPositions: this.keptPositions.trim(),
+                });
+                this.readKept(this.member.kept);
+                this.notify(this.t.members.saved);
+                this.member = await this.request('GET', `/api/admin/members/${this.memberSummary.id}`);
+            } catch (error) {
+                this.sheetError = error.message;
+            } finally {
+                this.busy = false;
             }
         },
 

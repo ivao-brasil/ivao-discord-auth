@@ -254,4 +254,49 @@ class AdminTest extends TestCase
         $this->assertFalse(app(MemberSyncService::class)->fullRunWasRequested());
     }
 
+    public function test_admin_sets_the_name_and_positions_of_a_member_by_hand()
+    {
+        $account = ConsentmentModel::create([
+            'userVid' => '123456', 'discordId' => '555', 'nickName' => '| BR-WM',
+            'roles' => '', 'division' => 'BR', 'status' => true,
+        ]);
+
+        $this->asAdmin()
+            ->putJson("/api/admin/members/{$account->id}", ['firstName' => ' Joelson ', 'staffPositions' => 'br-wm, ivao-wd6'])
+            ->assertOk()
+            ->assertJson(['firstName' => 'Joelson', 'staffPositions' => 'BR-WM:IVAO-WD6']);
+
+        $account->refresh();
+        $this->assertSame('Joelson', $account->firstName);
+        $this->assertSame('BR-WM:IVAO-WD6', $account->staffPositions);
+    }
+
+    public function test_clearing_the_fields_removes_what_was_kept()
+    {
+        $account = ConsentmentModel::create([
+            'userVid' => '123456', 'discordId' => '555', 'nickName' => 'x', 'firstName' => 'Joelson',
+            'staffPositions' => 'BR-WM', 'roles' => '', 'division' => 'BR', 'status' => true,
+        ]);
+
+        $this->asAdmin()->putJson("/api/admin/members/{$account->id}", ['firstName' => '', 'staffPositions' => ''])->assertOk();
+
+        $account->refresh();
+        $this->assertNull($account->firstName);
+        $this->assertNull($account->staffPositions);
+    }
+
+    public function test_members_cannot_set_the_name_of_others()
+    {
+        $account = ConsentmentModel::create([
+            'userVid' => '123456', 'discordId' => '555', 'nickName' => 'x',
+            'roles' => '', 'division' => 'BR', 'status' => true,
+        ]);
+
+        $this->withSession(['IVAO_USER' => $this->ivaoUser()])
+            ->putJson("/api/admin/members/{$account->id}", ['firstName' => 'Outro'])
+            ->assertRedirect(route('home'));
+
+        $this->assertNull($account->fresh()->firstName);
+    }
+
 }
