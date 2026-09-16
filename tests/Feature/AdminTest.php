@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Application\Sync\MemberSyncService;
 use App\Application\Sync\SyncStatusStore;
 use App\ConsentmentModel;
+use App\Infrastructure\Services\RolesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -145,9 +146,20 @@ class AdminTest extends TestCase
     public function test_validates_rule_fields()
     {
         $this->asAdmin()
-            ->putJson('/api/admin/rules', ['rules' => [['id' => 'x', 'name' => '', 'roles' => [], 'minAtcRating' => 42]]])
+            ->putJson('/api/admin/rules', ['rules' => [['id' => 'x', 'roles' => [], 'minAtcRating' => 42]]])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['rules.0.name', 'rules.0.roles', 'rules.0.minAtcRating']);
+            ->assertJsonValidationErrors(['rules.0.roles', 'rules.0.minAtcRating']);
+    }
+
+    public function test_saves_a_rule_written_before_names_existed()
+    {
+        $this->fakeDiscord();
+
+        $this->asAdmin()
+            ->putJson('/api/admin/rules', ['rules' => [['id' => 'x', 'roles' => ['900']]]])
+            ->assertSuccessful();
+
+        $this->assertSame('', app(RolesService::class)->rules()->first()->getName());
     }
 
     public function test_searches_and_filters_linked_members()

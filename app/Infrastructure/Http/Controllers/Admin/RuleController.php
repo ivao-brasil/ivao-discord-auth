@@ -34,7 +34,9 @@ class RuleController extends Controller
         $data = $request->validate([
             'rules' => ['present', 'array', 'max:100'],
             'rules.*.id' => ['required', 'string', 'max:40'],
-            'rules.*.name' => ['required', 'string', 'max:60'],
+            // Rules written before the admin had names carry none, and refusing them
+            // would make every other rule unsavable
+            'rules.*.name' => ['nullable', 'string', 'max:60'],
             'rules.*.roles' => ['required', 'array', 'min:1'],
             'rules.*.roles.*' => ['string', 'regex:/^\d+$/'],
             'rules.*.staff' => ['array'],
