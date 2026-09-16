@@ -13,7 +13,10 @@ class IVAOUserDirectory implements IVAOUserDirectoryContract
 
     private const STAFF_URL = 'https://api.ivao.aero/v2/userStaffPositions';
 
+    private const POSITIONS_URL = 'https://api.ivao.aero/v2/staffPositions';
+
     private const STAFF_CACHE_KEY = 'ivao.staff.positions';
+    private const POSITIONS_CACHE_KEY = 'ivao.staff.catalogue';
     private const TOKEN_CACHE_KEY = 'ivao.api.token';
 
     public function find(string $vid): ?array
@@ -100,6 +103,46 @@ class IVAOUserDirectory implements IVAOUserDirectoryContract
             } while ($page++ < $pages);
 
             return $positions;
+        });
+    }
+
+    /**
+     * Every staff position IVAO defines, as a map of code to its name and department.
+     *
+     * Codes come without the division prefix, so BR-SOA2 is listed as -SOA2.
+     *
+     * @return array<string, array{name: string, department: string}>
+     */
+    public function staffPositionCatalogue(): array
+    {
+        return Cache::remember(self::POSITIONS_CACHE_KEY, now()->addDay(), function () {
+            $token = $this->accessToken();
+            $catalogue = [];
+            $page = 1;
+
+            do {
+                $response = Http::withToken($token)
+                    ->acceptJson()
+                    ->timeout(20)
+                    ->get(self::POSITIONS_URL, ['page' => $page, 'perPage' => 100])
+                    ->throw()
+                    ->json();
+
+                foreach ($response['items'] ?? [] as $item) {
+                    if (empty($item['id'])) {
+                        continue;
+                    }
+
+                    $catalogue[(string) $item['id']] = [
+                        'name' => (string) ($item['name'] ?? $item['id']),
+                        'department' => (string) ($item['departmentTeam']['department']['name'] ?? ''),
+                    ];
+                }
+
+                $pages = (int) ($response['pages'] ?? 1);
+            } while ($page++ < $pages);
+
+            return $catalogue;
         });
     }
 

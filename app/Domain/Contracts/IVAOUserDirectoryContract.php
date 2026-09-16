@@ -29,4 +29,14 @@ interface IVAOUserDirectoryContract
      * @throws \Illuminate\Http\Client\RequestException when the API cannot be reached
      */
     public function staffPositions(): array;
+
+    /**
+     * Every staff position IVAO defines, as a map of code to its name and department.
+     * Codes come without the division prefix, so BR-SOA2 is listed as -SOA2.
+     *
+     * @return array<string, array{name: string, department: string}>
+     *
+     * @throws \Illuminate\Http\Client\RequestException when the API cannot be reached
+     */
+    public function staffPositionCatalogue(): array;
 }
