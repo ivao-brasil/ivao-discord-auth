@@ -26,6 +26,37 @@ class IVAOUserDirectory implements IVAOUserDirectoryContract
         return $response->throw()->json();
     }
 
+    public function findMany(array $vids): array
+    {
+        $token = $this->accessToken();
+
+        $responses = Http::pool(fn ($pool) => array_map(
+            fn (string $vid) => $pool->as($vid)
+                ->withToken($token)
+                ->acceptJson()
+                ->timeout(15)
+                ->get(self::USERS_URL.rawurlencode($vid)),
+            array_values($vids)
+        ));
+
+        $users = [];
+
+        foreach ($responses as $vid => $response) {
+            if ($response instanceof \Throwable) {
+                continue;
+            }
+
+            if ($response->successful()) {
+                $users[(string) $vid] = $response->json();
+            } elseif ($response->notFound()) {
+                $users[(string) $vid] = null;
+            }
+            // Anything else is left for the single request, which reports the failure
+        }
+
+        return $users;
+    }
+
     private function accessToken(): string
     {
         if ($token = Cache::get(self::TOKEN_CACHE_KEY)) {

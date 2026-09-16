@@ -10,6 +10,7 @@ use App\Domain\Contracts\IVAOUserDirectoryContract;
 use App\Domain\Entities\Guild;
 use App\Domain\Entities\Member;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Enumerable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -38,6 +39,12 @@ class MemberSyncService
     private $resolver;
     private $statuses;
 
+    /** @var array<string, array|null> Discord members of the batch being synced */
+    private $guildMembers = [];
+
+    /** @var array<string, array|null> IVAO users of the batch being synced */
+    private $ivaoUsers = [];
+
     public function __construct(
         IVAOUserDirectoryContract $directory,
         GuildServiceContract $guildService,
@@ -60,13 +67,18 @@ class MemberSyncService
     public function plan(ConsentmentModel $account): SyncPlan
     {
         $guild = Guild::FromService($this->guildService);
-        $discordMember = $this->guildService->getMember($account->discordId, $guild);
+
+        $discordMember = array_key_exists($account->discordId, $this->guildMembers)
+            ? $this->guildMembers[$account->discordId]
+            : $this->guildService->getMember($account->discordId, $guild);
 
         if ($discordMember === null) {
             return SyncPlan::away();
         }
 
-        $user = $this->directory->find($account->userVid);
+        $user = array_key_exists($account->userVid, $this->ivaoUsers)
+            ? $this->ivaoUsers[$account->userVid]
+            : $this->directory->find($account->userVid);
 
         // Without the IVAO account there is no proof of anything, and roles are never
         // taken away on the strength of an answer that did not come
@@ -135,42 +147,77 @@ class MemberSyncService
         $summary = ['checked' => 0, 'updated' => 0, 'away' => 0, 'failed' => 0, 'removed' => 0];
         $statuses = [];
         $maxRemovals = max(1, (int) config('brauth.sync.max_removals'));
+        $batchSize = max(1, (int) config('brauth.sync.batch_size'));
 
-        foreach ($this->consentments->allActive() as $account) {
-            $summary['checked']++;
+        foreach ($this->consentments->allActive()->chunk($batchSize) as $batch) {
+            $this->prefetch($batch);
 
-            try {
-                $result = $this->apply($account, $this->plan($account));
-                $statuses[$account->id] = SyncStatusStore::forResult($result);
-                $summary['updated'] += $result->hasChanges() ? 1 : 0;
-                $summary['away'] += $result->status === SyncResult::AWAY ? 1 : 0;
-                $summary['removed'] += count($result->removed);
-                $progress && $progress($account, $result, null);
-            } catch (\Throwable $e) {
-                $statuses[$account->id] = SyncStatusStore::FAILED;
-                $summary['failed']++;
-                Log::warning($e->getMessage(), ['event' => 'sync.failed', 'vid' => $account->userVid]);
-                $progress && $progress($account, null, $e);
+            foreach ($batch as $account) {
+                $summary['checked']++;
+
+                try {
+                    $result = $this->apply($account, $this->plan($account));
+                    $statuses[$account->id] = SyncStatusStore::forResult($result);
+                    $summary['updated'] += $result->hasChanges() ? 1 : 0;
+                    $summary['away'] += $result->status === SyncResult::AWAY ? 1 : 0;
+                    $summary['removed'] += count($result->removed);
+                    $progress && $progress($account, $result, null);
+                } catch (\Throwable $e) {
+                    $statuses[$account->id] = SyncStatusStore::FAILED;
+                    $summary['failed']++;
+                    Log::warning($e->getMessage(), ['event' => 'sync.failed', 'vid' => $account->userVid]);
+                    $progress && $progress($account, null, $e);
+                }
+
+                // Taking roles from this many members at once is a sign of bad data, not
+                // of that many members losing them on the same day
+                if ($summary['removed'] > $maxRemovals) {
+                    $summary['aborted'] = true;
+                    Log::critical('Discord sync stopped after too many role removals', [
+                        'event' => 'sync.aborted',
+                    ] + $summary);
+                    break 2;
+                }
             }
 
+            $this->forgetPrefetched();
             usleep((int) config('brauth.sync.delay_ms') * 1000);
-
-            // Taking roles from this many members at once is a sign of bad data, not of
-            // that many members losing them on the same day
-            if ($summary['removed'] > $maxRemovals) {
-                $summary['aborted'] = true;
-                Log::critical('Discord sync stopped after too many role removals', [
-                    'event' => 'sync.aborted',
-                ] + $summary);
-                break;
-            }
         }
+
+        $this->forgetPrefetched();
 
         $this->statuses->replace($statuses);
         Cache::forever(self::LAST_RUN_CACHE_KEY, $summary + ['finishedAt' => now()->toIso8601String()]);
         Log::notice('Discord sync finished', ['event' => 'sync.finished'] + $summary);
 
         return $summary;
+    }
+
+    /**
+     * Asks Discord and IVAO about a whole batch at once, which is what makes the run quick.
+     *
+     * @param  \Illuminate\Support\Enumerable<int, ConsentmentModel>  $batch
+     */
+    private function prefetch(Enumerable $batch): void
+    {
+        $this->guildMembers = $this->guildService->getMembers(
+            $batch->pluck('discordId')->unique()->all(),
+            Guild::FromService($this->guildService)
+        );
+
+        $vids = $batch
+            ->filter(fn (ConsentmentModel $account) => ($this->guildMembers[$account->discordId] ?? null) !== null)
+            ->pluck('userVid')
+            ->unique()
+            ->all();
+
+        $this->ivaoUsers = $vids ? $this->directory->findMany($vids) : [];
+    }
+
+    private function forgetPrefetched(): void
+    {
+        $this->guildMembers = [];
+        $this->ivaoUsers = [];
     }
 
     private function apply(ConsentmentModel $account, SyncPlan $plan): SyncResult

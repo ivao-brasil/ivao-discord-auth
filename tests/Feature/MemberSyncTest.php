@@ -216,6 +216,25 @@ class MemberSyncTest extends TestCase
         $this->assertSame('Fulano da Silva', $account->fresh()->firstName);
     }
 
+    public function test_a_member_the_batch_could_not_fetch_is_asked_about_again()
+    {
+        $account = $this->account();
+
+        $this->fakeApis(Http::response($this->ivaoUser()), ['roles' => [], 'nick' => null], [
+            // The batch request is rate limited, the single one that follows succeeds
+            self::MEMBER_URL => Http::sequence()
+                ->push(['message' => 'You are being rate limited'], 429)
+                ->push(['roles' => [], 'nick' => 'Fulano | BR-WM'], 200)
+                ->push(null, 204),
+        ]);
+
+        $summary = app(MemberSyncService::class)->syncAll();
+
+        $this->assertSame(1, $summary['checked']);
+        $this->assertSame(0, $summary['failed']);
+        $this->assertSame(0, $summary['away']);
+    }
+
     public function test_member_without_a_public_name_keeps_the_nickname()
     {
         $account = $this->account();

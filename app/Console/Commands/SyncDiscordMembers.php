@@ -61,9 +61,13 @@ class SyncDiscordMembers extends Command
             : $consentments->allActive();
 
         $counts = ['checked' => 0, 'changed' => 0, 'away' => 0, 'unverified' => 0, 'failed' => 0, 'roles' => 0, 'nicknames' => 0];
+        $delay = (int) config('brauth.sync.delay_ms') * 1000;
 
         foreach ($accounts as $account) {
             $counts['checked']++;
+
+            // The same pace as a real run, so a preview never floods Discord
+            usleep($delay);
 
             try {
                 $plan = $sync->plan($account);
