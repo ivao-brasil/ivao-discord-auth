@@ -19,4 +19,14 @@ interface IVAOUserDirectoryContract
      * @return array<string, array|null>
      */
     public function findMany(array $vids): array;
+
+    /**
+     * Every staff position of the network, as a map of VID to positions. IVAO hides the
+     * positions of private profiles on the user endpoint but lists them here.
+     *
+     * @return array<string, array<int, array{id: string, connectAs: string, onTrial: bool}>>
+     *
+     * @throws \Illuminate\Http\Client\RequestException when the API cannot be reached
+     */
+    public function staffPositions(): array;
 }

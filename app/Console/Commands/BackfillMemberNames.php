@@ -23,31 +23,36 @@ class BackfillMemberNames extends Command
     ): int {
         $guild = Guild::FromService($guildService);
         $dryRun = (bool) $this->option('dry-run');
+        $networkPositions = $directory->staffPositions();
         $filled = 0;
         $missing = 0;
 
         foreach ($consentments->allActive() as $account) {
-            if (! empty($account->firstName) && ! empty($account->staffPositions)) {
-                continue;
-            }
+            // Positions come from the network list, never from a nickname, which can
+            // carry a position the member left long ago
+            $positions = $this->positionsOf($networkPositions[$account->userVid] ?? []);
+            $firstName = $account->firstName;
 
-            $user = $this->fromIVAO($directory, $account);
-            $nickname = $guildService->getMember($account->discordId, $guild)['nick'] ?? $account->nickName;
+            if (empty($firstName)) {
+                $user = $this->fromIVAO($directory, $account);
+                $nickname = $guildService->getMember($account->discordId, $guild)['nick'] ?? $account->nickName;
+                $firstName = $this->nameOf($user) ?? $this->nameFromNickname($nickname);
+            }
 
             $changes = array_filter([
-                'firstName' => $account->firstName ?: ($this->nameOf($user) ?? $this->nameFromNickname($nickname)),
-                // Positions are only taken from IVAO: a nickname can carry a position the member left long ago
-                'staffPositions' => $account->staffPositions ?: $this->positionsOf($user),
+                'firstName' => $firstName === $account->firstName ? null : $firstName,
+                'staffPositions' => $positions === $account->staffPositions ? null : $positions,
             ]);
 
-            if (! isset($changes['firstName'])) {
+            if ($firstName === null) {
                 $missing++;
+            }
 
+            if ($changes === []) {
                 continue;
             }
 
-            $this->line("{$account->userVid}: {$changes['firstName']}".
-                (isset($changes['staffPositions']) ? " ({$changes['staffPositions']})" : ''));
+            $this->line("{$account->userVid}: ".($firstName ?? '—').($positions ? " ({$positions})" : ''));
 
             $dryRun || $account->update($changes);
             $filled++;
@@ -76,11 +81,15 @@ class BackfillMemberNames extends Command
         return $member ? $this->clean(explode(' ', trim((string) $member->getFirstName()))[0]) : null;
     }
 
-    private function positionsOf(?Member $member): ?string
+    /** @param array<int, array> $positions */
+    private function positionsOf(array $positions): ?string
     {
-        if ($member === null || $member->hasHiddenProfile()) {
+        if ($positions === []) {
             return null;
         }
+
+        $member = new Member(['id' => 0]);
+        $member->useStaffPositions($positions);
 
         return $member->getStaffTitles()->join(':') ?: null;
     }

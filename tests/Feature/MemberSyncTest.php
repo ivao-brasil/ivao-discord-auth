@@ -51,6 +51,7 @@ class MemberSyncTest extends TestCase
     {
         Http::fake($overrides + [
             'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
+            'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions()),
             'api.ivao.aero/v2/users/*' => $ivaoUser,
             'discord.com/api/v10/guilds/'.self::GUILD.'/roles' => Http::response([
                 ['id' => '900', 'name' => 'Web'], ['id' => '901', 'name' => 'Membro'], ['id' => '777', 'name' => 'Eventos'],
@@ -67,7 +68,10 @@ class MemberSyncTest extends TestCase
         $account = $this->account();
         $this->fakeApis(
             Http::response($this->ivaoUser(['userStaffPositions' => [['id' => 'BR-AOC', 'connectAs' => 'BR-AOC']]])),
-            ['roles' => ['900', '777'], 'nick' => 'Fulano | BR-WM']
+            ['roles' => ['900', '777'], 'nick' => 'Fulano | BR-WM'],
+            ['api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions([
+                ['userId' => 123456, 'id' => 'BR-AOC', 'connectAs' => 'BR-AOC', 'onTrial' => false],
+            ]))]
         );
 
         $result = app(MemberSyncService::class)->sync($account);
@@ -162,19 +166,42 @@ class MemberSyncTest extends TestCase
         Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH');
     }
 
-    public function test_a_hidden_profile_gets_the_nickname_of_the_name_and_positions_kept_from_the_login()
+    public function test_a_hidden_profile_takes_its_positions_from_the_network_list()
     {
         $account = $this->account();
-        $account->update(['firstName' => 'Fulano', 'staffPositions' => 'BR-WM:IVAO-WD6']);
+        $account->update(['firstName' => 'Fulano']);
 
+        // The user endpoint hides the positions of a private profile; the network list has them
         $this->fakeApis(
             Http::response($this->ivaoUser(['firstName' => null, 'lastName' => null, 'userStaffPositions' => []])),
-            ['roles' => ['900', '901'], 'nick' => '- 123456']
+            ['roles' => ['900', '901'], 'nick' => '- 123456'],
+            ['api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions([
+                ['userId' => 123456, 'id' => 'BR-WM', 'connectAs' => 'BR-WM', 'onTrial' => false],
+                ['userId' => 123456, 'id' => 'WD6', 'connectAs' => 'IVAO-WD6', 'onTrial' => false],
+            ]))]
         );
 
         $result = app(MemberSyncService::class)->sync($account);
 
         $this->assertSame('Fulano | BR-WM IVAO-WD6', $result->nickname);
+        $this->assertSame('BR-WM:IVAO-WD6', $account->fresh()->staffPositions);
+    }
+
+    public function test_positions_kept_from_the_login_stand_in_when_the_network_list_fails()
+    {
+        $account = $this->account();
+        $account->update(['firstName' => 'Fulano', 'staffPositions' => 'BR-WM']);
+
+        $this->fakeApis(
+            Http::response($this->ivaoUser(['firstName' => null, 'lastName' => null, 'userStaffPositions' => []])),
+            ['roles' => ['900', '901'], 'nick' => '- 123456'],
+            ['api.ivao.aero/v2/userStaffPositions*' => Http::response(['error' => 'unavailable'], 503)]
+        );
+
+        $result = app(MemberSyncService::class)->sync($account);
+
+        $this->assertSame('Fulano | BR-WM', $result->nickname);
+        $this->assertSame([], $result->removed);
     }
 
     public function test_the_positions_from_ivao_are_kept_for_later_runs()

@@ -178,6 +178,7 @@ class AdminTest extends TestCase
         $this->saveRoleRules([['id' => 'web', 'roles' => ['900'], 'staff' => ['BR-WM']], ['id' => 'members', 'roles' => ['901']]]);
         $this->fakeDiscord([
             'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
+            'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions()),
             'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser()),
             'discord.com/api/v10/guilds/'.self::GUILD.'/members/555' => Http::response(['roles' => ['900', '777'], 'nick' => 'Fulano']),
         ]);
@@ -201,6 +202,7 @@ class AdminTest extends TestCase
         $this->saveRoleRules([['id' => 'members', 'roles' => ['901']]]);
         $this->fakeDiscord([
             'api.ivao.aero/v2/oauth/token' => Http::response(['access_token' => 'app-token', 'expires_in' => 3600]),
+            'api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions()),
             'api.ivao.aero/v2/users/*' => Http::response($this->ivaoUser()),
             'discord.com/api/v10/guilds/'.self::GUILD.'/members/555' => fn (Request $request) => $request->method() === 'GET'
                 ? Http::response(['roles' => [], 'nick' => 'Fulano | BR-WM'])
