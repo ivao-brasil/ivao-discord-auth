@@ -112,6 +112,30 @@ class MemberSyncTest extends TestCase
         Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH');
     }
 
+    public function test_stored_name_is_used_when_ivao_hides_it()
+    {
+        $account = $this->account();
+        $account->update(['firstName' => 'Fulano']);
+        $this->fakeApis(
+            Http::response($this->ivaoUser(['firstName' => null, 'userStaffPositions' => [['id' => 'BR-WM', 'connectAs' => 'BR-WM', 'onTrial' => false]]])),
+            ['roles' => ['900'], 'nick' => 'Fulano - 123456']
+        );
+
+        $result = app(MemberSyncService::class)->sync($account);
+
+        $this->assertSame('Fulano | BR-WM', $result->nickname);
+    }
+
+    public function test_the_name_from_ivao_is_kept_for_later_runs()
+    {
+        $account = $this->account();
+        $this->fakeApis(Http::response($this->ivaoUser()), ['roles' => ['900', '901'], 'nick' => 'Fulano | BR-WM']);
+
+        app(MemberSyncService::class)->sync($account);
+
+        $this->assertSame('Fulano da Silva', $account->fresh()->firstName);
+    }
+
     public function test_member_without_a_public_name_keeps_the_nickname()
     {
         $account = $this->account();

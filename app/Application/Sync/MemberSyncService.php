@@ -72,7 +72,7 @@ class MemberSyncService
 
         $desired = $eligible ? $this->resolver->rolesFor($member) : Collection::make();
         $current = Collection::make($discordMember['roles'] ?? []);
-        $nickname = $eligible ? $member->generateNickname() : null;
+        $nickname = $eligible ? $member->generateNickname($account->firstName) : null;
 
         return new SyncPlan(
             $discordMember,
@@ -146,6 +146,8 @@ class MemberSyncService
             return SyncResult::away();
         }
 
+        $this->rememberFirstName($account, $plan->member);
+
         $guild = Guild::FromService($this->guildService);
         $added = [];
         $removed = [];
@@ -173,6 +175,19 @@ class MemberSyncService
         }
 
         return $result;
+    }
+
+    /**
+     * Keeps the name from IVAO while it is available, so the nickname can still be built
+     * for members who later make their profile private.
+     */
+    private function rememberFirstName(ConsentmentModel $account, ?Member $member): void
+    {
+        $firstName = $member ? trim((string) $member->getFirstName()) : '';
+
+        if ($firstName !== '' && $firstName !== $account->firstName) {
+            $account->update(['firstName' => mb_substr($firstName, 0, 64)]);
+        }
     }
 
     private function recordChanges(ConsentmentModel $account, SyncResult $result, Collection $current, Guild $guild): void
