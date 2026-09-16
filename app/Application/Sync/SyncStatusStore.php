@@ -58,6 +58,10 @@ class SyncStatusStore
             return self::AWAY;
         }
 
+        if ($result->status === SyncResult::UNVERIFIED) {
+            return self::FAILED;
+        }
+
         return $result->skipped ? self::PENDING : self::OK;
     }
 }

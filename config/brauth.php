@@ -16,6 +16,10 @@ return [
         // Pause between members to stay within IVAO and Discord rate limits
         'delay_ms' => (int) env('SYNC_DELAY_MS', 250),
 
+        // A run that takes roles from more members than this stops, because such a number
+        // means the data it is acting on cannot be trusted
+        'max_removals' => (int) env('SYNC_MAX_REMOVALS', 50),
+
         // Minimum interval between /sync commands from the same member
         'cooldown_minutes' => (int) env('SYNC_COOLDOWN_MINUTES', 5),
     ],

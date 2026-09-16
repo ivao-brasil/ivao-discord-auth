@@ -54,6 +54,20 @@ class RoleResolver
             ->values();
     }
 
+    /**
+     * Roles given by rules that depend on staff positions, which a hidden profile cannot confirm.
+     *
+     * @return Collection<int, string>
+     */
+    public function staffRoles(): Collection
+    {
+        return $this->rules()
+            ->filter(fn (RoleRule $rule) => $rule->getStaff()->isNotEmpty())
+            ->flatMap(fn (RoleRule $rule) => $rule->getRoles())
+            ->unique()
+            ->values();
+    }
+
     /** @return Collection<int, RoleRule> */
     private function rules(): Collection
     {
