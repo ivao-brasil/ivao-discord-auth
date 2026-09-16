@@ -20,6 +20,9 @@ return [
         // means the data it is acting on cannot be trusted
         'max_removals' => (int) env('SYNC_MAX_REMOVALS', 50),
 
+        // Members asked about at once; Discord and IVAO answer these in parallel
+        'batch_size' => (int) env('SYNC_BATCH_SIZE', 10),
+
         // Minimum interval between /sync commands from the same member
         'cooldown_minutes' => (int) env('SYNC_COOLDOWN_MINUTES', 5),
     ],

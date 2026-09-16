@@ -61,6 +61,35 @@ class DiscordGuildService implements GuildServiceContract
         }
     }
 
+    public function getMembers(array $discordIds, Guild $guild): array
+    {
+        $responses = Http::pool(fn ($pool) => array_map(
+            fn (string $discordId) => $pool->as($discordId)
+                ->withToken($this->botToken, 'Bot')
+                ->acceptJson()
+                ->timeout(15)
+                ->get(self::API_URL."/guilds/{$guild->getId()}/members/{$discordId}"),
+            array_values($discordIds)
+        ));
+
+        $members = [];
+
+        foreach ($responses as $discordId => $response) {
+            if ($response instanceof \Throwable) {
+                continue;
+            }
+
+            if ($response->successful()) {
+                $members[(string) $discordId] = $response->json();
+            } elseif ($response->status() === 404) {
+                $members[(string) $discordId] = null;
+            }
+            // Anything else, a rate limit included, is left for the single request to handle
+        }
+
+        return $members;
+    }
+
     public function addRole(string $discordId, string $roleId, Guild $guild): bool
     {
         return $this->unlessAboveBot($discordId, "add role {$roleId}", function () use ($discordId, $roleId, $guild) {
