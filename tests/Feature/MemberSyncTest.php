@@ -113,10 +113,10 @@ class MemberSyncTest extends TestCase
         Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH');
     }
 
-    public function test_a_hidden_profile_keeps_its_nickname_and_staff_roles()
+    public function test_a_hidden_profile_keeps_its_staff_roles_and_nickname()
     {
         $account = $this->account();
-        $account->update(['firstName' => 'Fulano']);
+        $account->update(['firstName' => 'Fulano', 'staffPositions' => 'BR-WM']);
 
         // IVAO hides the name and the staff positions of a private profile, so the
         // answer cannot be read as "this member is not staff anymore"
@@ -130,6 +130,31 @@ class MemberSyncTest extends TestCase
         $this->assertSame([], $result->removed);
         $this->assertNull($result->nickname);
         Http::assertNotSent(fn (Request $r) => in_array($r->method(), ['DELETE', 'PATCH']));
+    }
+
+    public function test_a_hidden_profile_gets_the_nickname_of_the_name_and_positions_kept_from_the_login()
+    {
+        $account = $this->account();
+        $account->update(['firstName' => 'Fulano', 'staffPositions' => 'BR-WM:IVAO-WD6']);
+
+        $this->fakeApis(
+            Http::response($this->ivaoUser(['firstName' => null, 'lastName' => null, 'userStaffPositions' => []])),
+            ['roles' => ['900', '901'], 'nick' => '- 123456']
+        );
+
+        $result = app(MemberSyncService::class)->sync($account);
+
+        $this->assertSame('Fulano | BR-WM IVAO-WD6', $result->nickname);
+    }
+
+    public function test_the_positions_from_ivao_are_kept_for_later_runs()
+    {
+        $account = $this->account();
+        $this->fakeApis(Http::response($this->ivaoUser()), ['roles' => ['900', '901'], 'nick' => 'Fulano | BR-WM']);
+
+        app(MemberSyncService::class)->sync($account);
+
+        $this->assertSame('BR-WM', $account->fresh()->staffPositions);
     }
 
     public function test_a_hidden_profile_still_loses_roles_it_cannot_qualify_for()

@@ -7,13 +7,14 @@ use App\Domain\Contracts\ConsentmentServiceContract;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Contracts\IVAOUserDirectoryContract;
 use App\Domain\Entities\Guild;
+use App\Domain\Entities\Member;
 use Illuminate\Console\Command;
 
 class BackfillMemberNames extends Command
 {
     protected $signature = 'discord:backfill-names {--dry-run : List the names without saving them}';
 
-    protected $description = 'Fill the stored first name of members linked before it was kept';
+    protected $description = 'Fill the stored name and staff positions of members linked before they were kept';
 
     public function handle(
         ConsentmentServiceContract $consentments,
@@ -26,22 +27,28 @@ class BackfillMemberNames extends Command
         $missing = 0;
 
         foreach ($consentments->allActive() as $account) {
-            if (! empty($account->firstName)) {
+            if (! empty($account->firstName) && ! empty($account->staffPositions)) {
                 continue;
             }
 
-            $firstName = $this->fromIVAO($directory, $account)
-                ?? $this->fromNickname($guildService->getMember($account->discordId, $guild)['nick'] ?? null)
-                ?? $this->fromNickname($account->nickName);
+            $user = $this->fromIVAO($directory, $account);
+            $nickname = $guildService->getMember($account->discordId, $guild)['nick'] ?? $account->nickName;
 
-            if ($firstName === null) {
+            $changes = array_filter([
+                'firstName' => $account->firstName ?: ($this->nameOf($user) ?? $this->nameFromNickname($nickname)),
+                'staffPositions' => $account->staffPositions ?: ($this->positionsOf($user) ?? $this->positionsFromNickname($nickname)),
+            ]);
+
+            if (! isset($changes['firstName'])) {
                 $missing++;
 
                 continue;
             }
 
-            $this->line("{$account->userVid}: {$firstName}");
-            $dryRun || $account->update(['firstName' => $firstName]);
+            $this->line("{$account->userVid}: {$changes['firstName']}".
+                (isset($changes['staffPositions']) ? " ({$changes['staffPositions']})" : ''));
+
+            $dryRun || $account->update($changes);
             $filled++;
         }
 
@@ -52,7 +59,7 @@ class BackfillMemberNames extends Command
         return self::SUCCESS;
     }
 
-    private function fromIVAO(IVAOUserDirectoryContract $directory, ConsentmentModel $account): ?string
+    private function fromIVAO(IVAOUserDirectoryContract $directory, ConsentmentModel $account): ?Member
     {
         try {
             $user = $directory->find($account->userVid);
@@ -60,15 +67,40 @@ class BackfillMemberNames extends Command
             return null;
         }
 
-        return $this->clean(explode(' ', trim((string) ($user['firstName'] ?? '')))[0]);
+        return $user ? new Member($user) : null;
+    }
+
+    private function nameOf(?Member $member): ?string
+    {
+        return $member ? $this->clean(explode(' ', trim((string) $member->getFirstName()))[0]) : null;
+    }
+
+    private function positionsOf(?Member $member): ?string
+    {
+        if ($member === null || $member->hasHiddenProfile()) {
+            return null;
+        }
+
+        return $member->getStaffTitles()->join(':') ?: null;
     }
 
     /**
-     * Nicknames are "Name - VID" for members and "Name | BR-XX" for staff.
+     * Nicknames are "Name - VID" for members and "Name | BR-XX IVAO-YY" for staff.
      */
-    private function fromNickname(?string $nickname): ?string
+    private function nameFromNickname(?string $nickname): ?string
     {
         return $this->clean(trim(explode('|', explode(' - ', (string) $nickname)[0])[0]));
+    }
+
+    private function positionsFromNickname(?string $nickname): ?string
+    {
+        $parts = explode('|', (string) $nickname);
+
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        return implode(':', preg_split('/\s+/', trim($parts[1]), -1, PREG_SPLIT_NO_EMPTY)) ?: null;
     }
 
     /**

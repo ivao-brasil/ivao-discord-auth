@@ -44,6 +44,7 @@ class DiscordIVAOAuthService implements DiscordIVAOAuthServiceInterface
             'userVid' => $member->getVid(),
             'discordId' => $member->getDiscordId(),
             'firstName' => $member->getFirstName() ?: null,
+            'staffPositions' => $member->getStaffTitles()->join(':') ?: null,
             'nickName' => $member->generateNickname() ?? '',
             'roles' => $roles,
             'status' => true,

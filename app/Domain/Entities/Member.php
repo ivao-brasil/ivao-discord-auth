@@ -104,6 +104,12 @@ class Member
         return $this->staff;
     }
 
+    /** @return Collection<int, string> Positions as they appear in the nickname */
+    public function getStaffTitles(): Collection
+    {
+        return $this->staffTitles;
+    }
+
     public function getStaffPositions(bool $includeTrial = true): Collection
     {
         return $includeTrial ? $this->staff : $this->staff->diff($this->trialStaff)->values();
@@ -184,7 +190,7 @@ class Member
      *
      * @param  string|null  $knownFirstName  name kept from the member's last login
      */
-    public function generateNickname(?string $knownFirstName = null): ?string
+    public function generateNickname(?string $knownFirstName = null, ?array $knownTitles = null): ?string
     {
         $firstName = explode(' ', trim($this->firstName ?: (string) $knownFirstName))[0];
 
@@ -192,12 +198,16 @@ class Member
             return null;
         }
 
-        if (! $this->isStaff()) {
+        // A hidden profile comes without the positions, so the ones kept from the login stand in
+        $titles = $this->hasHiddenProfile() && $knownTitles !== null
+            ? Collection::make($knownTitles)->filter()->values()
+            : $this->staffTitles;
+
+        if ($titles->isEmpty()) {
             return mb_substr("$firstName - $this->vid", 0, self::NICKNAME_MAX_LENGTH);
         }
 
         // Discord rejects longer nicknames, so drop positions from the end until it fits
-        $titles = $this->staffTitles;
         do {
             $nick = "$firstName | ".$titles->join(' ');
             $titles = $titles->slice(0, -1);
