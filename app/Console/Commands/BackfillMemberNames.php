@@ -12,7 +12,9 @@ use Illuminate\Console\Command;
 
 class BackfillMemberNames extends Command
 {
-    protected $signature = 'discord:backfill-names {--dry-run : List the names without saving them}';
+    protected $signature = 'discord:backfill-names
+        {--dry-run : List the names without saving them}
+        {--no-audit-log : Do not read names from the Discord audit log}';
 
     protected $description = 'Fill the stored name and staff positions of members linked before they were kept';
 
@@ -27,6 +29,9 @@ class BackfillMemberNames extends Command
         $filled = 0;
         $missing = 0;
 
+        // The last place a name survives once the nickname lost it and the profile is private
+        $previousNicknames = null;
+
         foreach ($consentments->allActive() as $account) {
             // Positions come from the network list, never from a nickname, which can
             // carry a position the member left long ago
@@ -37,6 +42,11 @@ class BackfillMemberNames extends Command
                 $user = $this->fromIVAO($directory, $account);
                 $nickname = $guildService->getMember($account->discordId, $guild)['nick'] ?? $account->nickName;
                 $firstName = $this->nameOf($user) ?? $this->nameFromNickname($nickname);
+            }
+
+            if ($firstName === null && ! $this->option('no-audit-log')) {
+                $previousNicknames ??= $guildService->previousNicknames($guild);
+                $firstName = $this->nameFromNickname($previousNicknames[$account->discordId] ?? null);
             }
 
             $changes = array_filter([

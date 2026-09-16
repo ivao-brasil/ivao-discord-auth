@@ -33,5 +33,13 @@ interface GuildServiceContract
     public function removeRole(string $discordId, string $roleId, Guild $guild): bool;
     public function setNickname(string $discordId, string $nickname, Guild $guild): bool;
 
+    /**
+     * Nicknames read from the server audit log, as a map of Discord id to the most recent
+     * one that still carried a name. Discord keeps these for 45 days.
+     *
+     * @return array<string, string>
+     */
+    public function previousNicknames(Guild $guild, int $pages = 45): array;
+
     public function editInteractionResponse(string $interactionToken, string $content): void;
 }
