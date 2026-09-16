@@ -87,8 +87,12 @@ class MemberSyncService
             ? $this->resolver->managedRoles()->diff($this->resolver->staffRoles())
             : $this->resolver->managedRoles();
 
-        $nickname = $eligible
-            ? $member->generateNickname($account->firstName, $this->storedTitles($account))
+        $titles = $this->storedTitles($account);
+
+        // With a hidden profile and no positions kept from a login there is nothing to
+        // build a staff nickname from, and the one already there is left alone
+        $nickname = $eligible && (! $hidden || $titles !== null)
+            ? $member->generateNickname($account->firstName, $titles)
             : null;
 
         return new SyncPlan(

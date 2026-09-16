@@ -132,6 +132,22 @@ class MemberSyncTest extends TestCase
         Http::assertNotSent(fn (Request $r) => in_array($r->method(), ['DELETE', 'PATCH']));
     }
 
+    public function test_a_hidden_profile_without_kept_positions_is_left_alone()
+    {
+        $account = $this->account();
+        $account->update(['firstName' => 'Fulano', 'staffPositions' => null]);
+
+        $this->fakeApis(
+            Http::response($this->ivaoUser(['firstName' => null, 'lastName' => null, 'userStaffPositions' => []])),
+            ['roles' => ['900', '901'], 'nick' => 'Fulano | BR-WM']
+        );
+
+        $result = app(MemberSyncService::class)->sync($account);
+
+        $this->assertNull($result->nickname);
+        Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH');
+    }
+
     public function test_a_hidden_profile_gets_the_nickname_of_the_name_and_positions_kept_from_the_login()
     {
         $account = $this->account();

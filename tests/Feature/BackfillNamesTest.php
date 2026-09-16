@@ -58,7 +58,8 @@ class BackfillNamesTest extends TestCase
         $this->assertSame('BR-WM', $public->fresh()->staffPositions);
         $this->assertSame('Ciclano', $onDiscord->fresh()->firstName);
         $this->assertSame('Beltrano', $fromDatabase->fresh()->firstName);
-        $this->assertSame('BR-DIR', $fromDatabase->fresh()->staffPositions);
+        // The nickname says BR-DIR, but a nickname can be years out of date, so no position is stored
+        $this->assertNull($fromDatabase->fresh()->staffPositions);
         $this->assertNull($nameless->fresh()->firstName);
     }
 

@@ -36,7 +36,8 @@ class BackfillMemberNames extends Command
 
             $changes = array_filter([
                 'firstName' => $account->firstName ?: ($this->nameOf($user) ?? $this->nameFromNickname($nickname)),
-                'staffPositions' => $account->staffPositions ?: ($this->positionsOf($user) ?? $this->positionsFromNickname($nickname)),
+                // Positions are only taken from IVAO: a nickname can carry a position the member left long ago
+                'staffPositions' => $account->staffPositions ?: $this->positionsOf($user),
             ]);
 
             if (! isset($changes['firstName'])) {
@@ -92,16 +93,6 @@ class BackfillMemberNames extends Command
         return $this->clean(trim(explode('|', explode(' - ', (string) $nickname)[0])[0]));
     }
 
-    private function positionsFromNickname(?string $nickname): ?string
-    {
-        $parts = explode('|', (string) $nickname);
-
-        if (count($parts) < 2) {
-            return null;
-        }
-
-        return implode(':', preg_split('/\s+/', trim($parts[1]), -1, PREG_SPLIT_NO_EMPTY)) ?: null;
-    }
 
     /**
      * Nicknames left by the runs that lost the name are only a dash and the VID.
