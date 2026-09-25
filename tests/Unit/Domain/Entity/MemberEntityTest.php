@@ -62,7 +62,7 @@ class MemberEntityTest extends TestCase
             'firstName' => 'Beltrano da Silva',
             'userStaffPositions' => $this->staffPositions('ZZ-WM', 'ZZ-DIR'),
         ]));
-        $this->assertEquals('Beltrano | ZZ-WM ZZ-DIR', $member->generateNickname());
+        $this->assertEquals('Beltrano | ZZ/WM/DIR', $member->generateNickname());
     }
 
     public function testShouldCertifyThatReadNormalMemberCorrectly()
@@ -91,7 +91,7 @@ class MemberEntityTest extends TestCase
             ],
         ]));
 
-        $this->assertEquals('Mikhael | BR-MA1 BR-WM IVAO-WD6', $member->generateNickname());
+        $this->assertEquals('Mikhael | BR/MA1/WM IVAO-WD6', $member->generateNickname());
         $this->assertEquals(['WD6', 'BR-MA1', 'BR-WM'], $member->getStaff()->all());
     }
 
@@ -99,12 +99,27 @@ class MemberEntityTest extends TestCase
     {
         $member = new Member($this->ivaoUser([
             'firstName' => 'Maximiliano',
-            'userStaffPositions' => $this->staffPositions('BR-DIR', 'BR-ADIR', 'BR-WM', 'BR-AWM'),
+            'userStaffPositions' => $this->staffPositions('BR-DIR', 'BR-ADIR', 'BR-WM', 'BR-AWM', 'SBSE-CH'),
         ]));
 
         $nickname = $member->generateNickname();
-        $this->assertEquals('Maximiliano | BR-DIR BR-ADIR', $nickname);
+        $this->assertEquals('Maximiliano | BR/DIR/ADIR/WM/AWM', $nickname);
         $this->assertLessThanOrEqual(Member::NICKNAME_MAX_LENGTH, mb_strlen($nickname));
+    }
+
+    public function testShouldWriteTheDivisionOnceForPositionsThatShareIt()
+    {
+        $member = new Member($this->ivaoUser([
+            'firstName' => 'Veda',
+            'userStaffPositions' => [
+                ['id' => 'XU-WM', 'connectAs' => 'XU-WM'],
+                ['id' => 'DM2', 'connectAs' => 'IVAO-DM2'],
+                ['id' => 'WD3', 'connectAs' => 'IVAO-WD3'],
+            ],
+        ]));
+
+        // Without grouping this is 33 characters and IVAO-WD3 would be cut off
+        $this->assertEquals('Veda | XU-WM IVAO/DM2/WD3', $member->generateNickname());
     }
 
     public function testShouldCutNicknameWhenASinglePositionDoesNotFit()
