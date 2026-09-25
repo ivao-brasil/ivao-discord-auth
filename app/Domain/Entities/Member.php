@@ -6,6 +6,7 @@ namespace App\Domain\Entities;
 use App\Domain\Contracts\GuildServiceContract;
 use App\Domain\Contracts\IVAOApiServiceContract;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Enumerable;
 use Illuminate\Support\Facades\Log;
 
 class Member
@@ -226,11 +227,27 @@ class Member
 
         // Discord rejects longer nicknames, so drop positions from the end until it fits
         do {
-            $nick = "$firstName | ".$titles->join(' ');
+            $nick = "$firstName | ".self::groupTitles($titles);
             $titles = $titles->slice(0, -1);
         } while (mb_strlen($nick) > self::NICKNAME_MAX_LENGTH && $titles->isNotEmpty());
 
         return mb_substr($nick, 0, self::NICKNAME_MAX_LENGTH);
+    }
+
+    /**
+     * Positions of the same division are written once: BR-MA1 and BR-WM become BR-MA1/WM,
+     * which leaves room for the positions that would otherwise be cut off the end.
+     *
+     * @param  Enumerable<int, string>  $titles
+     */
+    private static function groupTitles(Enumerable $titles): string
+    {
+        return $titles
+            ->groupBy(fn (string $title) => explode('-', $title, 2)[0])
+            ->map(fn (Enumerable $group, string $prefix) => $group->count() === 1
+                ? $group->first()
+                : $prefix.'-'.$group->map(fn (string $title) => explode('-', $title, 2)[1] ?? $title)->join('/'))
+            ->join(' ');
     }
 
     /**
