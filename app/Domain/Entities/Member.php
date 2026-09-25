@@ -235,7 +235,7 @@ class Member
     }
 
     /**
-     * Positions of the same division are written once: BR-WM and BR-MA1 become BR/WM/MA1,
+     * Positions of the same division are written once: BR-MA1 and BR-WM become BR-MA1/WM,
      * which leaves room for the positions that would otherwise be cut off the end.
      *
      * @param  Enumerable<int, string>  $titles
@@ -246,7 +246,7 @@ class Member
             ->groupBy(fn (string $title) => explode('-', $title, 2)[0])
             ->map(fn (Enumerable $group, string $prefix) => $group->count() === 1
                 ? $group->first()
-                : $prefix.'/'.$group->map(fn (string $title) => explode('-', $title, 2)[1] ?? $title)->join('/'))
+                : $prefix.'-'.$group->map(fn (string $title) => explode('-', $title, 2)[1] ?? $title)->join('/'))
             ->join(' ');
     }
 
