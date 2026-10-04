@@ -96,8 +96,10 @@ class MemberSyncService
         $positions = $this->staffPositionsOf($account->userVid)
             ?? ($member->hasHiddenProfile() ? $this->storedPositions($account) : null);
 
+        // Positions an admin wrote by hand stand alongside IVAO's, which lag behind when a
+        // department is restructured and the new assignments have not reached the API
         if ($positions !== null) {
-            $member->useStaffPositions($positions);
+            $member->useStaffPositions($this->withStoredPositions($positions, $account));
         }
 
         $eligible = $this->resolver->isEligible($member);
@@ -317,6 +319,23 @@ class MemberSyncService
      *
      * @return array<int, array>|null
      */
+    /**
+     * @param  array<int, array>  $positions
+     * @return array<int, array>
+     */
+    private function withStoredPositions(array $positions, ConsentmentModel $account): array
+    {
+        $known = Collection::make($positions)->pluck('id')->all();
+
+        foreach ($this->storedPositions($account) ?? [] as $stored) {
+            if (! in_array($stored['id'], $known, true)) {
+                $positions[] = $stored;
+            }
+        }
+
+        return $positions;
+    }
+
     private function storedPositions(ConsentmentModel $account): ?array
     {
         $positions = trim((string) $account->staffPositions);
