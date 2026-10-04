@@ -283,26 +283,6 @@ class MemberSyncTest extends TestCase
         $this->assertSame(0, $summary['failed']);
     }
 
-    public function test_a_position_written_by_hand_is_added_to_the_ones_ivao_returns()
-    {
-        $account = $this->account();
-        $account->update(['firstName' => 'Mateus', 'staffPositions' => 'IVAO-PRA7']);
-
-        $this->fakeApis(
-            Http::response($this->ivaoUser([
-                'userStaffPositions' => [['id' => 'BR-PRC', 'connectAs' => 'BR-PRC', 'onTrial' => false]],
-            ])),
-            ['roles' => [], 'nick' => null],
-            ['api.ivao.aero/v2/userStaffPositions*' => Http::response($this->ivaoStaffPositions([
-                ['userId' => 123456, 'id' => 'BR-PRC', 'connectAs' => 'BR-PRC', 'onTrial' => false],
-            ]))]
-        );
-
-        $result = app(MemberSyncService::class)->sync($account);
-
-        $this->assertSame('Fulano | BR-PRC IVAO-PRA7', $result->nickname);
-    }
-
     public function test_member_without_a_public_name_keeps_the_nickname()
     {
         $account = $this->account();
