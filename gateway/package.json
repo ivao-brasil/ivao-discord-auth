@@ -1,0 +1,16 @@
+{
+  "name": "brauth-gateway",
+  "private": true,
+  "description": "Recebe o /sync pelo gateway do Discord e responde com o artisan do brauth",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^17.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

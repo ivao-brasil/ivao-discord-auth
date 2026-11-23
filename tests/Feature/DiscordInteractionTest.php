@@ -153,4 +153,20 @@ class DiscordInteractionTest extends TestCase
 
         Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r['content'] === __('text.syncFailed'));
     }
+
+    public function test_gateway_bot_gets_the_reply_from_artisan()
+    {
+        $this->artisan('discord:answer-sync', ['discordId' => '555'])
+            ->expectsOutput(__('text.syncNotLinked', ['url' => config('app.url')]))
+            ->assertSuccessful();
+
+        config(['brauth.admin_vids' => ['123456']]);
+        ConsentmentModel::create(['userVid' => '123456', 'discordId' => '555', 'nickName' => 'x', 'roles' => '', 'division' => 'BR', 'status' => true]);
+
+        $this->artisan('discord:answer-sync', ['discordId' => '555', '--todos' => true])
+            ->expectsOutput(__('text.syncEveryoneQueued'))
+            ->assertSuccessful();
+
+        $this->assertTrue(app(MemberSyncService::class)->fullRunWasRequested());
+    }
 }
