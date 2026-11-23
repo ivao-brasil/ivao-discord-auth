@@ -91,8 +91,25 @@ class MemberEntityTest extends TestCase
             ],
         ]));
 
-        $this->assertEquals('Mikhael | BR-MA1/WM IVAO-WD6', $member->generateNickname());
+        $this->assertEquals('Mikhael | BR-MA1/WM HQ-WD6', $member->generateNickname());
         $this->assertEquals(['WD6', 'BR-MA1', 'BR-WM'], $member->getStaff()->all());
+        $this->assertEquals(['BR-MA1', 'BR-WM', 'IVAO-WD6'], $member->getStaffTitles()->all());
+    }
+
+    public function testShouldKeepEveryPositionWhenHqIsShortened()
+    {
+        $member = new Member($this->ivaoUser([
+            'firstName' => 'Mikhael',
+            'userStaffPositions' => [
+                ['id' => 'BR-WM', 'connectAs' => 'BR-WM'],
+                ['id' => 'BR-MA1', 'connectAs' => 'BR-MA1'],
+                ['id' => 'WD9', 'connectAs' => 'IVAO-WD9'],
+                ['id' => 'US10', 'connectAs' => 'IVAO-US10'],
+            ],
+        ]));
+
+        // Com IVAO-XX seriam 33 caracteres e o US10 ficaria de fora
+        $this->assertEquals('Mikhael | BR-WM/MA1 HQ-WD9/US10', $member->generateNickname());
     }
 
     public function testShouldDropPositionsFromTheEndWhenNicknameIsTooLong()
@@ -118,8 +135,7 @@ class MemberEntityTest extends TestCase
             ],
         ]));
 
-        // Without grouping this is 33 characters and IVAO-WD3 would be cut off
-        $this->assertEquals('Veda | XU-WM IVAO-DM2/WD3', $member->generateNickname());
+        $this->assertEquals('Veda | XU-WM HQ-DM2/WD3', $member->generateNickname());
     }
 
     public function testShouldCutNicknameWhenASinglePositionDoesNotFit()

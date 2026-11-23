@@ -221,6 +221,9 @@ class Member
             ? Collection::make($knownTitles)->filter()->values()
             : $this->staffTitles;
 
+        // Cargos de HQ aparecem como HQ-XX, mais curto que o IVAO-XX da API
+        $titles = $titles->map(fn (string $title) => preg_replace('/^IVAO-/', 'HQ-', $title));
+
         if ($titles->isEmpty()) {
             return mb_substr("$firstName - $this->vid", 0, self::NICKNAME_MAX_LENGTH);
         }

@@ -184,7 +184,7 @@ class MemberSyncTest extends TestCase
 
         $result = app(MemberSyncService::class)->sync($account);
 
-        $this->assertSame('Fulano | BR-WM IVAO-WD6', $result->nickname);
+        $this->assertSame('Fulano | BR-WM HQ-WD6', $result->nickname);
         $this->assertSame('BR-WM:IVAO-WD6', $account->fresh()->staffPositions);
     }
 
