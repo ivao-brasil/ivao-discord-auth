@@ -4,7 +4,6 @@ namespace App\Infrastructure\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Rejects requests to the interactions endpoint that were not signed by Discord.
@@ -23,28 +22,10 @@ class VerifyDiscordSignature
             || ! $this->isHex($publicKey, SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES)
             || $timestamp === ''
             || ! sodium_crypto_sign_verify_detached(hex2bin($signature), $timestamp.$request->getContent(), hex2bin($publicKey))) {
-            $this->trace('rejected', $request);
             abort(401, 'Invalid request signature');
         }
 
-        $this->trace('received', $request);
-
         return $next($request);
-    }
-
-    // Temporário: rastreia o /sync enquanto o timeout é investigado
-    public function terminate(Request $request, $response): void
-    {
-        $this->trace('answered', $request, ['status' => $response->getStatusCode()]);
-    }
-
-    private function trace(string $step, Request $request, array $context = []): void
-    {
-        Log::channel('single')->notice("discord.interaction.{$step}", $context + [
-            'type' => $request->input('type'),
-            'command' => $request->input('data.name'),
-            'ms' => (int) round((microtime(true) - request()->server('REQUEST_TIME_FLOAT')) * 1000),
-        ]);
     }
 
     private function isHex(string $value, int $bytes): bool

@@ -80,11 +80,6 @@ class DiscordInteractionController extends Controller
             }
 
             $this->guildService->editInteractionResponse($token, $message);
-
-            // Temporário: quanto tempo a sync levou depois da resposta
-            Log::channel('single')->notice('discord.interaction.synced', [
-                'ms' => (int) round((microtime(true) - request()->server('REQUEST_TIME_FLOAT')) * 1000),
-            ]);
         });
 
         return response()->json([
